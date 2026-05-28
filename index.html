@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registro de Mano de Obra — Scientia Colombia SAS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #F5F4F0; --surface: #FFFFFF; --surface2: #F0EEE9;
+    --border: #E2DFD8; --border2: #CBC8C0;
+    --text: #1C1B18; --text2: #6B6860; --text3: #A09D96;
+    --accent: #1A5C3A; --accent-bg: #E8F2ED; --accent-text: #1A5C3A;
+    --danger: #C0392B; --danger-bg: #FDF0EE;
+    --radius: 8px; --radius-lg: 14px;
+  }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* HEADER */
+  .page-header { background: var(--accent); padding: 1.5rem 2rem 1.75rem; }
+  .header-top { display: flex; align-items: center; gap: 14px; margin-bottom: 1rem; }
+  .logo { width: 40px; height: 40px; background: rgba(255,255,255,0.15); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .logo svg { width: 22px; height: 22px; }
+  .header-top h1 { font-size: 16px; font-weight: 600; color: #fff; line-height: 1.3; }
+  .header-top p { font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 2px; }
+  .header-desc { background: rgba(255,255,255,0.08); border-radius: 10px; padding: 1rem 1.25rem; }
+  .header-desc p { font-size: 12.5px; color: rgba(255,255,255,0.8); margin-bottom: 10px; line-height: 1.5; }
+  .resp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 6px; }
+  .resp-item { background: rgba(255,255,255,0.1); border-radius: 7px; padding: 6px 10px; }
+  .resp-name { font-size: 12px; font-weight: 600; color: #fff; }
+  .resp-area { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 1px; }
+
+  /* CONTAINER */
+  .container { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .section-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); margin-bottom: 10px; margin-top: 1.5rem; }
+  .section-label:first-child { margin-top: 0; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1rem; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  label { font-size: 12px; font-weight: 500; color: var(--text2); display: flex; align-items: center; gap: 5px; }
+  label svg { width: 13px; height: 13px; flex-shrink: 0; }
+  input[type="date"], input[type="time"], input[type="text"], input[type="number"], textarea, select {
+    font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--text);
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 8px 10px; width: 100%; outline: none; transition: border-color 0.15s;
+  }
+  input:focus, textarea:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,92,58,0.1); }
+  .required-star { color: var(--danger); margin-left: 2px; }
+
+  /* ORDERS TABLE */
+  .orders-wrap { overflow-x: auto; margin-top: 0; }
+  .orders-table { width: 100%; border-collapse: collapse; min-width: 900px; }
+  .orders-table thead th {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
+    color: var(--text3); padding: 10px 10px 8px; text-align: left;
+    background: var(--surface2); border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .orders-table thead th:first-child { border-radius: 8px 0 0 0; }
+  .orders-table thead th:last-child { border-radius: 0 8px 0 0; }
+  .orders-table tbody tr { border-bottom: 1px solid var(--border); }
+  .orders-table tbody tr:last-child { border-bottom: none; }
+  .orders-table tbody tr:hover td { background: #FAFAF8; }
+  .orders-table tbody td { padding: 8px 6px; vertical-align: middle; }
+  .orders-table tbody td:first-child { padding-left: 10px; }
+
+  .row-num {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--accent-bg); color: var(--accent-text);
+    font-size: 12px; font-weight: 600; font-family: 'DM Mono', monospace;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .horas-chip {
+    background: var(--accent-bg); color: var(--accent-text);
+    font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 600;
+    padding: 7px 10px; border-radius: var(--radius); text-align: center;
+    min-width: 64px; border: 1px solid #B8D9C6; white-space: nowrap;
+  }
+  .horas-chip.warn { background: var(--danger-bg); color: var(--danger); border-color: #F5C6C2; }
+
+  /* col widths */
+  .col-num   { width: 40px; }
+  .col-op    { width: 120px; }
+  .col-aux   { width: 80px; }
+  .col-time  { width: 100px; }
+  .col-horas { width: 80px; }
+  .col-act   { min-width: 180px; }
+  .col-lider { width: 220px; }
+
+  /* ACTIONS */
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 1.25rem; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; font-size: 14px; font-weight: 500; border-radius: var(--radius); border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: opacity 0.15s, transform 0.1s; }
+  .btn:active { transform: scale(0.98); }
+  .btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .btn-save { background: var(--accent); color: #fff; flex: 1; justify-content: center; }
+  .btn-save:hover { opacity: 0.88; }
+  .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-add { background: var(--accent-bg); color: var(--accent-text); border: 1px solid #B8D9C6; }
+  .btn-add:hover { background: #d4eade; }
+  .btn-clear { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
+  .btn-clear:hover { background: var(--border); }
+
+  .del-btn { background: none; border: none; cursor: pointer; color: var(--text3); padding: 5px; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: background 0.15s, color 0.15s; }
+  .del-btn:hover { background: var(--danger-bg); color: var(--danger); }
+  .del-btn svg { width: 15px; height: 15px; }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(12px); background: #1C1B18; color: #fff; padding: 10px 20px; border-radius: 99px; font-size: 13px; font-weight: 500; opacity: 0; pointer-events: none; transition: opacity 0.25s, transform 0.25s; white-space: nowrap; z-index: 999; max-width: 90vw; text-align: center; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.error { background: var(--danger); }
+
+  @media (max-width: 640px) {
+    .page-header { padding: 1.25rem; }
+    .container { padding: 1.25rem 0.75rem 4rem; }
+    .grid3 { grid-template-columns: 1fr; }
+    .card { padding: 1rem; }
+  }
+
+  /* ORDER CARDS - mobile first */
+  .order-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem; margin-bottom: 10px; }
+  .order-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .order-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 0; }
+  .order-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+  @media (max-width: 400px) { .order-grid { grid-template-columns: 1fr; } .order-grid.three { grid-template-columns: 1fr 1fr; } }
+  .order-card .field { margin-bottom: 0; }
+  .order-card label { font-size: 12px; }
+
+  /* TABLE layout - desktop */
+  .orders-wrap { overflow-x: auto; }
+  .orders-table { width: 100%; border-collapse: collapse; min-width: 900px; }
+  .orders-table thead th { font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text3); padding: 10px 10px 8px; text-align: left; background: var(--surface2); border-bottom: 1px solid var(--border); white-space: nowrap; }
+  .orders-table thead th:first-child { border-radius: 8px 0 0 0; }
+  .orders-table thead th:last-child { border-radius: 0 8px 0 0; }
+  .orders-table tbody tr { border-bottom: 1px solid var(--border); }
+  .orders-table tbody tr:last-child { border-bottom: none; }
+  .orders-table tbody tr:hover td { background: #FAFAF8; }
+  .orders-table tbody td { padding: 8px 6px; vertical-align: middle; }
+  .orders-table tbody td:first-child { padding-left: 10px; }
+  .col-num { width: 40px; } .col-op { width: 120px; } .col-aux { width: 80px; }
+  .col-time { width: 100px; } .col-horas { width: 80px; } .col-act { min-width: 180px; } .col-lider { width: 200px; }
+
+  .desktop-only { display: block; }
+  .mobile-only { display: none; }
+  @media (max-width: 700px) {
+    .desktop-only { display: none !important; }
+    .mobile-only { display: block !important; }
+  }
+
+  .horas-box.valid   { background: #E8F5E9; border-color: #66BB6A; }
+  .horas-box.invalid { background: var(--danger-bg); border-color: #EF9A9A; }
+  .horas-box.valid   .value { color: #2E7D32; }
+  .horas-box.invalid .value { color: var(--danger); }
+  .horas-box.valid   #validator-label { color: #2E7D32; opacity:0.8; }
+  .horas-box.invalid #validator-label { color: var(--danger); opacity:0.8; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="header-top">
+    <div class="logo">
+      <svg fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+        <path stroke-linecap="round" stroke-linejoin="round" d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+      </svg>
+    </div>
+    <div>
+      <h1>Registro de Mano de Obra — Operativos</h1>
+      <p>Scientia Colombia SAS · Órdenes de producción</p>
+    </div>
+  </div>
+  <div class="header-desc">
+    <p>Este es el formulario oficial para el registro de mano de obra de los operativos de <strong style="color:#fff">Scientia Colombia SAS</strong>. Por favor diligencie todos los campos obligatorios. A continuación se indica el área que corresponde a cada responsable:</p>
+    <div class="resp-grid">
+      <div class="resp-item"><div class="resp-name">Milena Castañeda 1</div><div class="resp-area">Laboratorios Nep's, Galleria y Vitryus</div></div>
+      <div class="resp-item"><div class="resp-name">Milena Castañeda 2</div><div class="resp-area">Anagasta</div></div>
+      <div class="resp-item"><div class="resp-name">Milena Castañeda 3</div><div class="resp-area">Laboratorio CIB1</div></div>
+      <div class="resp-item"><div class="resp-name">Yonnier Torres 1</div><div class="resp-area">Invernadero Frijol</div></div>
+      <div class="resp-item"><div class="resp-name">Yonnier Torres 2</div><div class="resp-area">Invernadero Persilys</div></div>
+      <div class="resp-item"><div class="resp-name">Yonnier Torres 3</div><div class="resp-area">Invernadero Neocal</div></div>
+      <div class="resp-item"><div class="resp-name">Juan Hernández</div><div class="resp-area">Logística</div></div>
+      <div class="resp-item"><div class="resp-name">Edwin Estupe 1</div><div class="resp-area">Laboratorio Predacius</div></div>
+      <div class="resp-item"><div class="resp-name">Edwin Estupe 2</div><div class="resp-area">Laboratorio Trichograma</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- GENERAL FIELDS -->
+  <p class="section-label">Información general</p>
+  <div class="card">
+    <div class="grid3">
+      <div class="field">
+        <label for="quincena">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Quincena <span class="required-star">*</span>
+        </label>
+        <select id="quincena">
+          <option value="">— Seleccione quincena —</option>
+          <option value="1-1">1-1 · Primera quincena de Enero</option>
+          <option value="1-2">1-2 · Segunda quincena de Enero</option>
+          <option value="2-1">2-1 · Primera quincena de Febrero</option>
+          <option value="2-2">2-2 · Segunda quincena de Febrero</option>
+          <option value="3-1">3-1 · Primera quincena de Marzo</option>
+          <option value="3-2">3-2 · Segunda quincena de Marzo</option>
+          <option value="4-1">4-1 · Primera quincena de Abril</option>
+          <option value="4-2">4-2 · Segunda quincena de Abril</option>
+          <option value="5-1">5-1 · Primera quincena de Mayo</option>
+          <option value="5-2">5-2 · Segunda quincena de Mayo</option>
+          <option value="6-1">6-1 · Primera quincena de Junio</option>
+          <option value="6-2">6-2 · Segunda quincena de Junio</option>
+          <option value="7-1">7-1 · Primera quincena de Julio</option>
+          <option value="7-2">7-2 · Segunda quincena de Julio</option>
+          <option value="8-1">8-1 · Primera quincena de Agosto</option>
+          <option value="8-2">8-2 · Segunda quincena de Agosto</option>
+          <option value="9-1">9-1 · Primera quincena de Septiembre</option>
+          <option value="9-2">9-2 · Segunda quincena de Septiembre</option>
+          <option value="10-1">10-1 · Primera quincena de Octubre</option>
+          <option value="10-2">10-2 · Segunda quincena de Octubre</option>
+          <option value="11-1">11-1 · Primera quincena de Noviembre</option>
+          <option value="11-2">11-2 · Segunda quincena de Noviembre</option>
+          <option value="12-1">12-1 · Primera quincena de Diciembre</option>
+          <option value="12-2">12-2 · Segunda quincena de Diciembre</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="fecha">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Fecha <span class="required-star">*</span>
+        </label>
+        <input type="date" id="fecha">
+      </div>
+      <div class="field">
+        <label>
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Semana del año
+        </label>
+        <div class="horas-box" style="height:38px;">
+          <span style="font-size:13px; color:var(--text2)">Semana</span>
+          <span class="value" id="semana" style="font-size:16px">—</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Total horas registradas
+        </label>
+        <div class="horas-box" id="validator-box" style="height:38px; transition: background 0.3s, border-color 0.3s;">
+          <span style="font-size:12px; color:var(--text2)" id="validator-label">0 / —h esperadas</span>
+          <span class="value" id="validator-value" style="font-size:16px">0h</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ORDERS -->
+  <p class="section-label">Órdenes de producción</p>
+
+  <!-- DESKTOP: table -->
+  <div class="card desktop-only" style="padding: 0; overflow: hidden;" id="desktop-wrap">
+    <div class="orders-wrap">
+      <table class="orders-table">
+        <thead>
+          <tr>
+            <th class="col-num">#</th>
+            <th class="col-op">Orden (OP) *</th>
+            <th class="col-aux">Auxiliares *</th>
+            <th class="col-time">Hora inicio *</th>
+            <th class="col-time">Hora fin *</th>
+            <th class="col-horas">Factor</th><th class="col-horas">Total h.</th>
+            <th class="col-act">Actividad *</th>
+            <th class="col-lider">Líder encargado *</th>
+            <th style="min-width:130px">Observaciones</th>
+            <th style="width:36px"></th>
+          </tr>
+        </thead>
+        <tbody id="orders-body-desktop"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- MOBILE: cards -->
+  <div id="orders-body-mobile" class="mobile-only"></div>
+
+  <div class="actions">
+    <button class="btn btn-add" onclick="addRow()">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Agregar orden
+    </button>
+    <button class="btn btn-save" id="btn-guardar" onclick="guardarTodo()">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      Enviar todos los registros
+    </button>
+    <button class="btn btn-clear" onclick="limpiarTodo()">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+      Limpiar
+    </button>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+<div id="offline-banner" style="display:none; position:fixed; top:0; left:0; right:0; z-index:998; background:#C0392B; color:#fff; text-align:center; padding:10px 16px; font-size:13px; font-weight:500; font-family:'DM Sans',sans-serif;">
+  ⚠ Sin conexión a internet — puedes seguir llenando, los datos no se perderán
+</div>
+
+<script>
+var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzI5v_57N3uoxGC3IDgnCoot0CzIPimg33RXHDlY9csZ4Zs_bY-YOlb41LpqqlxAdmVWg/exec";
+var rowCount = 0;
+
+var LIDERES = [
+  { val: "Milena Castañeda 1",  label: "Milena Castañeda 1" },
+  { val: "Milena Castañeda 2",  label: "Milena Castañeda 2" },
+  { val: "Milena Castañeda 3",  label: "Milena Castañeda 3" },
+  { val: "Yonnier Torres 1",    label: "Yonnier Torres 1" },
+  { val: "Yonnier Torres 2",    label: "Yonnier Torres 2" },
+  { val: "Yonnier Torres 3",    label: "Yonnier Torres 3" },
+  { val: "Juan Hernández",      label: "Juan Hernández" },
+  { val: "Edwin Estupe 1",      label: "Edwin Estupe 1" },
+  { val: "Edwin Estupe 2",      label: "Edwin Estupe 2" }
+];
+
+function liderOptions(selectedVal) {
+  var opts = '<option value="">— Seleccione —</option>';
+  for (var i = 0; i < LIDERES.length; i++) {
+    var sel = (LIDERES[i].val === selectedVal) ? ' selected' : '';
+    opts += '<option value="' + LIDERES[i].val + '"' + sel + '>' + LIDERES[i].label + '</option>';
+  }
+  return opts;
+}
+
+function addRow(preselectedLider) {
+  rowCount++;
+  var id = rowCount;
+  var liderSel = preselectedLider || '';
+  var isMobile = window.innerWidth <= 700;
+
+  if (!isMobile) {
+    // DESKTOP: table row
+    var tbody = document.getElementById('orders-body-desktop');
+    var tr = document.createElement('tr');
+    tr.id = 'row-' + id;
+    tr.innerHTML =
+      '<td><div class="row-num">' + id + '</div></td>' +
+      '<td><input type="text" id="op-' + id + '" placeholder="OP-001" style="min-width:100px"></td>' +
+      '<td><input type="number" id="aux-' + id + '" min="1" max="99" placeholder="0" style="width:70px;text-align:center" oninput="updateValidator()"></td>' +
+      '<td><input type="time" id="ini-' + id + '" onchange="calcRow(' + id + ')" oninput="calcRow(' + id + ')"></td>' +
+      '<td><input type="time" id="fin-' + id + '" onchange="calcRow(' + id + ')" oninput="calcRow(' + id + ')"></td>' +
+      '<td><input type="number" id="factor-' + id + '" value="1" min="1" max="99" style="width:60px;text-align:center" onchange="calcRow(' + id + ')" oninput="calcRow(' + id + ')"></td>' +
+      '<td><div class="horas-chip" id="horas-' + id + '">—</div></td>' +
+      '<td><input type="text" id="act-' + id + '" placeholder="Descripción" style="min-width:160px"></td>' +
+      '<td><select id="lider-' + id + '">' + liderOptions(liderSel) + '</select></td>' +
+      '<td><input type="text" id="obs-' + id + '" placeholder="Opcional" style="min-width:110px"></td>' +
+      '<td><button class="del-btn" onclick="removeRow(' + id + ')" title="Eliminar"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button></td>';
+    tbody.appendChild(tr);
+  } else {
+    // MOBILE: card
+    var container = document.getElementById('orders-body-mobile');
+    var div = document.createElement('div');
+    div.id = 'row-' + id;
+    div.className = 'order-card';
+    div.innerHTML =
+      '<div class="order-card-header">' +
+        '<div class="row-num">' + id + '</div>' +
+        '<button class="del-btn" onclick="removeRow(' + id + ')"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>' +
+      '</div>' +
+      '<div class="order-grid">' +
+        '<div class="field"><label>Orden (OP) *</label><input type="text" id="op-' + id + '" placeholder="OP-001"></div>' +
+        '<div class="field"><label>N° Auxiliares *</label><input type="number" id="aux-' + id + '" min="1" max="99" placeholder="0" style="text-align:center" oninput="updateValidator()"></div>' +
+      '</div>' +
+      '<div class="order-grid" style="margin-top:8px">' +
+        '<div class="field"><label>Hora inicio *</label><input type="time" id="ini-' + id + '" onchange="calcRow(' + id + ')" oninput="calcRow(' + id + ')"></div>' +
+        '<div class="field"><label>Hora fin *</label><input type="time" id="fin-' + id + '" onchange="calcRow(' + id + ')" oninput="calcRow(' + id + ')"></div>' +
+      '</div>' +
+      '<div class="order-grid" style="margin-top:8px">' +
+        '<div class="field"><label>Factor (personas)</label><input type="number" id="factor-' + id + '" value="1" min="1" max="99" style="text-align:center" onchange="calcRow(' + id + ')" oninput="calcRow(' + id + ')"></div>' +
+        '<div class="field"><label>Total horas</label><div class="horas-chip" id="horas-' + id + '">—</div></div>' +
+      '</div>' +
+      '<div class="field" style="margin-top:8px"><label>Actividad *</label><input type="text" id="act-' + id + '" placeholder="Descripción de la actividad"></div>' +
+      '<div class="field" style="margin-top:8px"><label>Líder encargado *</label><select id="lider-' + id + '">' + liderOptions(liderSel) + '</select></div>' +
+      '<div class="field" style="margin-top:8px"><label>Observaciones</label><input type="text" id="obs-' + id + '" placeholder="Opcional"></div>';
+    container.appendChild(div);
+  }
+}
+
+function removeRow(id) {
+  var row = document.getElementById('row-' + id);
+  if (row) row.remove();
+  renumberRows();
+}
+
+function renumberRows() {
+  var rows = document.querySelectorAll('#orders-body-desktop tr, #orders-body-mobile .order-card');
+  for (var i = 0; i < rows.length; i++) {
+    var numEl = rows[i].querySelector('.row-num');
+    if (numEl) numEl.textContent = (i + 1);
+  }
+}
+
+function calcRow(id) {
+  var ini = document.getElementById('ini-' + id).value;
+  var fin = document.getElementById('fin-' + id).value;
+  var factorEl = document.getElementById('factor-' + id);
+  var chip = document.getElementById('horas-' + id);
+  if (!ini || !fin) { chip.textContent = '—'; chip.className = 'horas-chip'; updateValidator(); return null; }
+  var p1 = ini.split(':'), p2 = fin.split(':');
+  var mins = (parseInt(p2[0]) * 60 + parseInt(p2[1])) - (parseInt(p1[0]) * 60 + parseInt(p1[1]));
+  if (mins <= 0) { chip.textContent = 'Revisar'; chip.className = 'horas-chip warn'; updateValidator(); return null; }
+  var baseHours = parseFloat((mins / 60).toFixed(2));
+  var factor = factorEl ? (parseFloat(factorEl.value) || 1) : 1;
+  if (factor < 1) { factor = 1; if (factorEl) factorEl.value = 1; }
+  var total = parseFloat((baseHours * factor).toFixed(2));
+  var h = Math.floor(total), m = Math.round((total - h) * 60);
+  var txt = h > 0 ? (m > 0 ? h + 'h ' + m + 'm' : h + 'h') : m + 'm';
+  chip.textContent = txt;
+  chip.className = 'horas-chip';
+  updateValidator();
+  return total;
+}
+
+function updateValidator() {
+  var rows = getRows();
+  var totalH = 0;
+
+  // Get auxiliares from first row only
+  var firstAux = 0;
+  if (rows.length > 0) {
+    var firstId = rows[0].id.replace('row-', '');
+    var firstAuxEl = document.getElementById('aux-' + firstId);
+    firstAux = firstAuxEl ? (parseInt(firstAuxEl.value) || 0) : 0;
+  }
+
+  for (var i = 0; i < rows.length; i++) {
+    var rid = rows[i].id.replace('row-', '');
+    var chip = document.getElementById('horas-' + rid);
+    if (chip && chip.textContent !== '—' && chip.textContent !== 'Revisar') {
+      var txt = chip.textContent;
+      var hh = 0, mm = 0;
+      if (txt.indexOf('h') > -1 && txt.indexOf('m') > -1) {
+        hh = parseInt(txt.split('h')[0]) || 0;
+        mm = parseInt(txt.split('h')[1].replace('m','').trim()) || 0;
+      } else if (txt.indexOf('h') > -1) {
+        hh = parseInt(txt.replace('h','').trim()) || 0;
+      } else if (txt.indexOf('m') > -1) {
+        mm = parseInt(txt.replace('m','').trim()) || 0;
+      }
+      totalH += hh + mm / 60;
+    }
+  }
+
+  totalH = parseFloat(totalH.toFixed(2));
+  var expected = firstAux * 7;
+
+  var box = document.getElementById('validator-box');
+  var valEl = document.getElementById('validator-value');
+  var lblEl = document.getElementById('validator-label');
+  if (!box) return;
+
+  var hh2 = Math.floor(totalH), mm2 = Math.round((totalH - hh2) * 60);
+  var totalTxt = hh2 > 0 ? (mm2 > 0 ? hh2 + 'h ' + mm2 + 'm' : hh2 + 'h') : (mm2 > 0 ? mm2 + 'm' : '0h');
+  valEl.textContent = totalTxt;
+
+  if (firstAux === 0) {
+    box.className = 'horas-box';
+    lblEl.textContent = 'Ingresa auxiliares en la primera fila';
+    return;
+  }
+
+  var diff = parseFloat((totalH - expected).toFixed(2));
+  if (diff === 0) {
+    lblEl.textContent = '✓ ' + totalH + 'h — Exacto (' + firstAux + ' aux × 7h)';
+    box.className = 'horas-box valid';
+  } else if (diff > 0) {
+    lblEl.textContent = '⚠ ' + totalH + 'h — ' + diff + 'h por encima de ' + expected + 'h esperadas';
+    box.className = 'horas-box invalid';
+  } else {
+    lblEl.textContent = '⚠ ' + totalH + 'h de ' + expected + 'h esperadas — faltan ' + Math.abs(diff) + 'h';
+    box.className = 'horas-box invalid';
+  }
+}
+
+function getRows() {
+  var isMobile = window.innerWidth <= 700;
+  return isMobile
+    ? document.querySelectorAll('#orders-body-mobile .order-card')
+    : document.querySelectorAll('#orders-body-desktop tr');
+}
+
+function getRowId(tr) {
+  return tr.id.replace('row-', '');
+}
+
+function showToast(msg, isError) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (isError ? ' error' : '') + ' show';
+  setTimeout(function() { t.className = 'toast'; }, 3500);
+}
+
+function guardarTodo() {
+  var quincena = document.getElementById('quincena').value;
+  var fecha    = document.getElementById('fecha').value;
+  var semana   = document.getElementById('semana').textContent.trim();
+
+  // Block if no internet
+  if (!navigator.onLine) {
+    showToast('⚠ Sin internet — los datos están guardados, envía cuando tengas conexión', true); return;
+  }
+
+  if (!quincena) {
+    showToast('⚠ Selecciona la quincena antes de enviar', true); return;
+  }
+  if (!fecha) {
+    showToast('⚠ Selecciona la fecha antes de enviar', true); return;
+  }
+
+  // Block if validator is not green
+  var validatorBox = document.getElementById('validator-box');
+  var validatorClass = validatorBox ? validatorBox.className : '';
+  if (validatorClass.indexOf('valid') === -1 || validatorClass.indexOf('invalid') > -1) {
+    showToast('⚠ El total de horas no cuadra — revisa la validación', true); return;
+  }
+
+  var rows = getRows();
+  if (rows.length === 0) {
+    showToast('⚠ Agrega al menos una orden', true); return;
+  }
+
+  var payload = [];
+  var valid = true;
+
+  for (var i = 0; i < rows.length; i++) {
+    var id  = getRowId(rows[i]);
+    var op  = document.getElementById('op-' + id).value.trim();
+    var aux = document.getElementById('aux-' + id).value.trim();
+    var ini = document.getElementById('ini-' + id).value;
+    var fin = document.getElementById('fin-' + id).value;
+    var act = document.getElementById('act-' + id).value.trim();
+    var lid = document.getElementById('lider-' + id).value;
+    var obs = document.getElementById('obs-' + id).value.trim();
+    var tot = calcRow(id);
+    var factor = document.getElementById('factor-' + id) ? (parseFloat(document.getElementById('factor-' + id).value) || 1) : 1;
+
+    if (!op || !aux || !ini || !fin || !act || !lid || !tot) {
+      showToast('⚠ Completa todos los campos de la orden ' + (i + 1), true);
+      valid = false; break;
+    }
+    payload.push({ quincena: quincena, semana: semana, fecha: fecha, orden: op, auxiliares: aux, h_ini: ini, h_fin: fin, total: tot, actividad: act, lider: lid, obs: obs });
+  }
+
+  if (!valid) return;
+
+  var btn = document.getElementById('btn-guardar');
+  btn.disabled = true;
+  btn.textContent = 'Enviando ' + payload.length + ' registro(s)...';
+
+  var promises = payload.map(function(record) {
+    return fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(record)
+    });
+  });
+
+  Promise.all(promises).then(function() {
+    showToast('✓ ' + payload.length + ' registro(s) enviados correctamente');
+    limpiarTodo();
+    btn.disabled = false;
+    btn.innerHTML = '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Enviar todos los registros';
+  }).catch(function() {
+    showToast('✕ Error de conexión. Intenta de nuevo.', true);
+    btn.disabled = false;
+    btn.innerHTML = '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Enviar todos los registros';
+  });
+}
+
+function limpiarTodo() {
+  document.getElementById('quincena').value = '';
+  // Online/offline banner
+function updateOnlineStatus() {
+  var banner = document.getElementById('offline-banner');
+  if (!navigator.onLine) {
+    banner.style.display = 'block';
+  } else {
+    banner.style.display = 'none';
+  }
+}
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+updateOnlineStatus();
+
+document.getElementById('fecha').value = new Date().toISOString().slice(0,10);
+  document.getElementById('semana').textContent = '—'; updateSemana();
+  document.getElementById('orders-body-desktop').innerHTML = '';
+  document.getElementById('orders-body-mobile').innerHTML = '';
+  rowCount = 0;
+  for (var i = 0; i < 5; i++) addRow();
+  updateValidator();
+}
+
+// Init: 5 rows on load
+function getWeekNumber(dateStr) {
+  var d = new Date(dateStr + 'T12:00:00');
+  var jan1 = new Date(d.getFullYear(), 0, 1);
+  var week = Math.ceil((((d - jan1) / 86400000) + jan1.getDay() + 1) / 7);
+  return week;
+}
+
+function updateSemana() {
+  var fecha = document.getElementById('fecha').value;
+  var el = document.getElementById('semana');
+  if (!fecha) { el.textContent = '—'; return; }
+  el.textContent = getWeekNumber(fecha);
+}
+
+document.getElementById('fecha').addEventListener('change', updateSemana);
+document.getElementById('fecha').addEventListener('input', updateSemana);
+
+// Online/offline banner
+function updateOnlineStatus() {
+  var banner = document.getElementById('offline-banner');
+  if (!navigator.onLine) {
+    banner.style.display = 'block';
+  } else {
+    banner.style.display = 'none';
+  }
+}
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+updateOnlineStatus();
+
+document.getElementById('fecha').value = new Date().toISOString().slice(0,10);
+updateSemana();
+for (var i = 0; i < 5; i++) addRow();
+</script>
+</body>
+</html>
