@@ -611,15 +611,25 @@ function guardarTodo() {
       showToast('⚠ Completa todos los campos de la orden ' + (i + 1), true);
       valid = false; break;
     }
-    var adjustedTot = tot;
-    if (i === rows.length - 1 && window._autoAdjust && window._autoAdjust !== 0) {
-      adjustedTot = parseFloat((tot + window._autoAdjust).toFixed(2));
-      if (adjustedTot < 0) adjustedTot = 0;
-    }
-    payload.push({ quincena: quincena, semana: semana, fecha: fecha, orden: op, auxiliares: auxGen, h_ini: ini, h_fin: fin, total: adjustedTot, actividad: act, lider: liderGen, obs: obs });
+    payload.push({ quincena: quincena, semana: semana, fecha: fecha, orden: op, auxiliares: auxGen, h_ini: ini, h_fin: fin, total: tot, actividad: act, lider: liderGen, obs: obs });
   }
 
   if (!valid) return;
+
+  // Post-build adjustment: recalculate total and fix last row if needed
+  var auxGenNum = parseInt(auxGen) || 0;
+  var expectedH = auxGenNum * 7;
+  if (expectedH > 0 && payload.length > 0) {
+    var payloadTotal = 0;
+    payload.forEach(function(r) { payloadTotal += parseFloat(r.total) || 0; });
+    payloadTotal = parseFloat(payloadTotal.toFixed(2));
+    var finalDiff = parseFloat((payloadTotal - expectedH).toFixed(2));
+    if (Math.abs(finalDiff) > 0 && Math.abs(finalDiff) < 0.1) {
+      var lastRow = payload[payload.length - 1];
+      lastRow.total = parseFloat((parseFloat(lastRow.total) - finalDiff).toFixed(2));
+      if (lastRow.total < 0) lastRow.total = 0;
+    }
+  }
 
   var btn = document.getElementById('btn-guardar');
   btn.disabled = true;
