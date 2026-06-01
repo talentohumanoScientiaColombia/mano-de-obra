@@ -156,6 +156,8 @@
   .horas-box.valid   #validator-label { color: #2E7D32; opacity:0.8; }
   .horas-box.invalid #validator-label { color: var(--danger); opacity:0.8; }
 </style>
+<script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://unpkg.com/jspdf-autotable@3.5.28/dist/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
 
@@ -632,7 +634,9 @@ function guardarTodo() {
       btn.innerHTML = '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Enviar todos los registros';
       if (fallidos.length === 0) {
         showToast('✓ ' + enviados + ' de ' + payload.length + ' registros confirmados por Google Sheets');
+        var savedPayload = payload.slice();
         limpiarTodo();
+        mostrarBotonPDF(savedPayload);
       } else {
         showToast('⚠ ' + enviados + ' confirmados, ' + fallidos.length + ' no llegaron (filas: ' + fallidos.join(', ') + '). Reenvía esas filas.', true);
       }
@@ -782,7 +786,112 @@ updateOnlineStatus();
 
 document.getElementById('fecha').value = new Date().toISOString().slice(0,10);
 updateSemana();
+rowCount = 0;
 for (var i = 0; i < 5; i++) addRow();
+
+function mostrarBotonPDF(registros) {
+  var existing = document.getElementById('pdf-btn-wrap');
+  if (existing) existing.remove();
+  var wrap = document.createElement('div');
+  wrap.id = 'pdf-btn-wrap';
+  wrap.style.cssText = 'margin-top:16px;text-align:center;';
+  wrap.innerHTML = '<button onclick="generarPDF()" style="background:#1A5C3A;color:#fff;border:none;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;font-family:DM Sans,sans-serif;display:inline-flex;align-items:center;gap:8px;"><svg fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\" stroke-width=\"2\" width=\"16\" height=\"16\"><path d=\"M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z\"/><polyline points=\"14 2 14 8 20 8\"/><line x1=\"16\" y1=\"13\" x2=\"8\" y2=\"13\"/><line x1=\"16\" y1=\"17\" x2=\"8\" y2=\"17\"/></svg>Descargar comprobante PDF</button>';
+  var actionsEl = document.querySelector('.actions');
+  actionsEl.parentNode.insertBefore(wrap, actionsEl.nextSibling);
+  window._lastPayload = registros;
+}
+
+function generarPDF() {
+  var registros = window._lastPayload;
+  if (!registros || registros.length === 0) return;
+
+  var r0 = registros[0];
+  var totalGeneral = 0;
+  registros.forEach(function(r) { totalGeneral += parseFloat(r.total) || 0; });
+  totalGeneral = parseFloat(totalGeneral.toFixed(2));
+
+  var doc = new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+  // Header background
+  doc.setFillColor(26, 92, 58);
+  doc.rect(0, 0, 297, 28, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Comprobante de Registro de Mano de Obra', 14, 12);
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Scientia Colombia SAS', 14, 21);
+  doc.text('Generado: ' + new Date().toLocaleString('es-CO'), 105, 21, { align: 'center' });
+
+  // Info boxes
+  doc.setTextColor(100, 100, 100);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+
+  var boxY = 34;
+  var boxes = [
+    { label: 'QUINCENA', value: r0.quincena },
+    { label: 'FECHA', value: r0.fecha },
+    { label: 'SEMANA', value: String(r0.semana) },
+    { label: 'N° AUXILIARES', value: String(r0.auxiliares) },
+    { label: 'LÍDER ENCARGADO', value: r0.lider },
+    { label: 'TOTAL HORAS DÍA', value: totalGeneral + 'h' }
+  ];
+
+  var boxW = 27;
+  boxes.forEach(function(b, i) {
+    var x = 14 + i * (boxW + 2);
+    doc.setFillColor(245, 244, 240);
+    doc.roundedRect(x, boxY, boxW, 16, 2, 2, 'F');
+    doc.setDrawColor(226, 223, 216);
+    doc.roundedRect(x, boxY, boxW, 16, 2, 2, 'S');
+    doc.setTextColor(160, 157, 150);
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    doc.text(b.label, x + 3, boxY + 5);
+    doc.setTextColor(28, 27, 24);
+    doc.setFontSize(i === 4 ? 8 : 11);
+    doc.setFont('helvetica', 'bold');
+    doc.text(b.value, x + 3, boxY + 13);
+  });
+
+  // Table
+  var tableRows = registros.map(function(r, i) {
+    return [i + 1, r.orden, r.h_ini, r.h_fin, r.total + 'h', r.actividad, r.obs || '—'];
+  });
+
+  doc.autoTable({
+    startY: boxY + 22,
+    head: [['#', 'Orden (OP)', 'Hora inicio', 'Hora fin', 'Total h.', 'Actividad', 'Observaciones']],
+    body: tableRows,
+    styles: { fontSize: 9, cellPadding: 3 },
+    headStyles: { fillColor: [26, 92, 58], textColor: 255, fontStyle: 'bold', fontSize: 9 },
+    alternateRowStyles: { fillColor: [245, 244, 240] },
+    columnStyles: {
+      0: { cellWidth: 7, halign: 'center' },
+      1: { cellWidth: 25 },
+      2: { cellWidth: 18, halign: 'center' },
+      3: { cellWidth: 18, halign: 'center' },
+      4: { cellWidth: 15, halign: 'center', fontStyle: 'bold', textColor: [26, 92, 58] },
+      5: { cellWidth: 60 },
+      6: { cellWidth: 35 }
+    },
+    margin: { left: 14, right: 14 }
+  });
+
+  // Footer
+  var finalY = doc.lastAutoTable.finalY + 6;
+  doc.setFillColor(232, 242, 237);
+  doc.setDrawColor(184, 217, 198);
+  doc.roundedRect(14, finalY, 182, 10, 2, 2, 'FD');
+  doc.setTextColor(26, 92, 58);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.text('✓ Registros confirmados por Google Sheets — ' + new Date().toLocaleString('es-CO'), 17, finalY + 7);
+
+  doc.save('Comprobante_ManoDeObra_' + r0.fecha + '.pdf');
+}
 </script>
 </body>
 </html>
