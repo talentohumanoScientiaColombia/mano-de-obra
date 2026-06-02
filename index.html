@@ -732,7 +732,11 @@ window.addEventListener('online', updateOnlineStatus);
 window.addEventListener('offline', updateOnlineStatus);
 updateOnlineStatus();
 
-document.getElementById('fecha').value = new Date().toISOString().slice(0,10);
+var hoy = new Date();
+var yyyy = hoy.getFullYear();
+var mm = String(hoy.getMonth() + 1).padStart(2, '0');
+var dd = String(hoy.getDate()).padStart(2, '0');
+document.getElementById('fecha').value = yyyy + '-' + mm + '-' + dd;
   document.getElementById('semana').textContent = '—'; updateSemana();
   document.getElementById('orders-body-desktop').innerHTML = '';
   document.getElementById('orders-body-mobile').innerHTML = '';
@@ -799,7 +803,11 @@ window.addEventListener('online', updateOnlineStatus);
 window.addEventListener('offline', updateOnlineStatus);
 updateOnlineStatus();
 
-document.getElementById('fecha').value = new Date().toISOString().slice(0,10);
+var hoy = new Date();
+var yyyy = hoy.getFullYear();
+var mm = String(hoy.getMonth() + 1).padStart(2, '0');
+var dd = String(hoy.getDate()).padStart(2, '0');
+document.getElementById('fecha').value = yyyy + '-' + mm + '-' + dd;
 updateSemana();
 rowCount = 0;
 for (var i = 0; i < 5; i++) addRow();
