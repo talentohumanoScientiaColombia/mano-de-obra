@@ -648,7 +648,8 @@ function guardarTodo() {
         limpiarTodo();
         mostrarBotonPDF(savedPayload);
       } else {
-        showToast('⚠ ' + enviados + ' confirmados, ' + fallidos.length + ' no llegaron (filas: ' + fallidos.join(', ') + '). Reenvía esas filas.', true);
+        showToast('⚠ ' + enviados + ' confirmados, ' + fallidos.length + ' no llegaron. Ver detalle abajo.', true);
+        mostrarFilasFallidas(payload, fallidos);
       }
       return;
     }
@@ -801,6 +802,92 @@ updateOnlineStatus();
 updateSemana();
 rowCount = 0;
 for (var i = 0; i < 5; i++) addRow();
+
+function mostrarFilasFallidas(payload, fallidos) {
+  // Remove existing retry panel if any
+  var existing = document.getElementById('retry-panel');
+  if (existing) existing.remove();
+
+  var panel = document.createElement('div');
+  panel.id = 'retry-panel';
+  panel.style.cssText = 'margin-top:16px; background:#FDF0EE; border:1px solid #EF9A9A; border-radius:14px; padding:1.25rem;';
+
+  var html = '<p style="font-size:13px; font-weight:600; color:#C0392B; margin-bottom:12px;">' +
+    '⚠ Las siguientes filas no llegaron a Google Sheets. Haz clic en Reenviar para cada una:</p>';
+
+  fallidos.forEach(function(filaNum) {
+    var record = payload[filaNum - 1];
+    if (!record) return;
+    html += '<div style="background:#fff; border:1px solid #F5C6C2; border-radius:10px; padding:10px 14px; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; gap:12px;" id="retry-row-' + filaNum + '">' +
+      '<div style="font-size:13px; color:#1C1B18;">' +
+        '<strong>Fila ' + filaNum + '</strong> &mdash; ' +
+        '<span style="font-family:monospace; background:#F5F4F0; padding:1px 6px; border-radius:4px;">' + record.orden + '</span> ' +
+        record.actividad + ' &mdash; <strong style="color:#1A5C3A">' + record.total + 'h</strong>' +
+      '</div>' +
+      '<button onclick="reenviarFila(' + filaNum + ')" id="retry-btn-' + filaNum + '" style="background:#1A5C3A;color:#fff;border:none;padding:7px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;font-family:DM Sans,sans-serif;">Reenviar</button>' +
+    '</div>';
+  });
+
+  panel.innerHTML = html;
+  window._retryPayload = payload;
+
+  var actionsEl = document.querySelector('.actions');
+  actionsEl.parentNode.insertBefore(panel, actionsEl.nextSibling);
+}
+
+function reenviarFila(filaNum) {
+  var payload = window._retryPayload;
+  if (!payload) return;
+  var record = payload[filaNum - 1];
+  if (!record) return;
+
+  var btn = document.getElementById('retry-btn-' + filaNum);
+  if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+
+  function intentar(intentos) {
+    var formData = new FormData();
+    formData.append('data', JSON.stringify(record));
+    fetch(SCRIPT_URL, { method: 'POST', body: formData })
+      .then(function(response) { return response.json(); })
+      .then(function(data) {
+        if (data.result === 'ok') {
+          var row = document.getElementById('retry-row-' + filaNum);
+          if (row) {
+            row.style.background = '#E8F2ED';
+            row.style.borderColor = '#B8D9C6';
+            row.innerHTML = '<div style="font-size:13px; color:#1A5C3A;">' +
+              '✓ <strong>Fila ' + filaNum + '</strong> confirmada por Google Sheets &mdash; ' +
+              '<span style="font-family:monospace; background:#d4eade; padding:1px 6px; border-radius:4px;">' + record.orden + '</span> ' +
+              record.actividad +
+            '</div>';
+          }
+          showToast('✓ Fila ' + filaNum + ' enviada correctamente');
+          // Check if all retries done
+          var pendientes = document.querySelectorAll('#retry-panel button:not(:disabled)');
+          if (pendientes.length === 0) {
+            setTimeout(function() {
+              var panel = document.getElementById('retry-panel');
+              if (panel) panel.remove();
+            }, 3000);
+          }
+        } else if (intentos > 1) {
+          setTimeout(function() { intentar(intentos - 1); }, 1500);
+        } else {
+          if (btn) { btn.disabled = false; btn.textContent = 'Reintentar'; }
+          showToast('⚠ Fila ' + filaNum + ' sigue sin llegar. Intenta de nuevo.', true);
+        }
+      })
+      .catch(function() {
+        if (intentos > 1) {
+          setTimeout(function() { intentar(intentos - 1); }, 1500);
+        } else {
+          if (btn) { btn.disabled = false; btn.textContent = 'Reintentar'; }
+          showToast('⚠ Fila ' + filaNum + ' sigue sin llegar. Intenta de nuevo.', true);
+        }
+      });
+  }
+  intentar(3);
+}
 
 function mostrarBotonPDF(registros) {
   var existing = document.getElementById('pdf-btn-wrap');
