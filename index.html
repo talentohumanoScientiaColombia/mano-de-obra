@@ -156,6 +156,7 @@
   .horas-box.valid   #validator-label { color: #2E7D32; opacity:0.8; }
   .horas-box.invalid #validator-label { color: var(--danger); opacity:0.8; }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://unpkg.com/jspdf-autotable@3.5.28/dist/jspdf.plugin.autotable.min.js"></script>
 </head>
@@ -328,6 +329,17 @@
       <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
       Limpiar
     </button>
+  </div>
+  <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
+    <button class="btn btn-clear" onclick="descargarPlantilla()" style="flex:1; justify-content:center;">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Descargar plantilla Excel
+    </button>
+    <label class="btn btn-clear" style="flex:1; justify-content:center; cursor:pointer; margin:0;">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Cargar desde Excel
+      <input type="file" id="file-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="cargarDesdeExcel(event)">
+    </label>
   </div>
 
 </div>
@@ -525,7 +537,11 @@ function showToast(msg, isError) {
 
 function guardarTodo() {
   var quincena   = document.getElementById('quincena').value;
-  var fecha      = document.getElementById('fecha').value;
+  var fecha      = 
+
+
+
+document.getElementById('fecha').value;
   var semana     = document.getElementById('semana').textContent.trim();
   var auxGen     = document.getElementById('aux-general').value.trim();
   var liderGen   = document.getElementById('lider-general').value;
@@ -731,7 +747,11 @@ window.addEventListener('online', updateOnlineStatus);
 window.addEventListener('offline', updateOnlineStatus);
 updateOnlineStatus();
 
-(function(){var h=new Date();document.getElementById('fecha').value=h.getFullYear()+'-'+String(h.getMonth()+1).padStart(2,'0')+'-'+String(h.getDate()).padStart(2,'0');})();
+(function(){var h=new Date();
+
+
+
+document.getElementById('fecha').value=h.getFullYear()+'-'+String(h.getMonth()+1).padStart(2,'0')+'-'+String(h.getDate()).padStart(2,'0');})();
   document.getElementById('semana').textContent = '—'; updateSemana();
   document.getElementById('orders-body-desktop').innerHTML = '';
   document.getElementById('orders-body-mobile').innerHTML = '';
@@ -749,7 +769,11 @@ function getWeekNumber(dateStr) {
 }
 
 function updateSemana() {
-  var fecha = document.getElementById('fecha').value;
+  var fecha = 
+
+
+
+document.getElementById('fecha').value;
   var el = document.getElementById('semana');
   if (!fecha) { el.textContent = '—'; return; }
   el.textContent = getWeekNumber(fecha);
@@ -798,7 +822,107 @@ window.addEventListener('online', updateOnlineStatus);
 window.addEventListener('offline', updateOnlineStatus);
 updateOnlineStatus();
 
-(function(){var h=new Date();document.getElementById('fecha').value=h.getFullYear()+'-'+String(h.getMonth()+1).padStart(2,'0')+'-'+String(h.getDate()).padStart(2,'0');})();
+(function(){var h=new Date();function descargarPlantilla() {
+  var wb = XLSX.utils.book_new();
+  var headers = [['Enviado', 'Orden (OP)', 'Hora inicio', 'Hora fin', 'Factor', 'Actividad', 'Observaciones']];
+  var ws = XLSX.utils.aoa_to_sheet(headers);
+  ws['!cols'] = [
+    { wch: 10 }, { wch: 18 }, { wch: 13 }, { wch: 13 },
+    { wch: 10 }, { wch: 35 }, { wch: 30 }
+  ];
+  // Add example row in gray
+  XLSX.utils.sheet_add_aoa(ws, [['', 'OP-001', '07:00', '14:00', '1', 'Ejemplo de actividad', 'Opcional']], { origin: 'A2' });
+  XLSX.utils.book_append_sheet(wb, ws, 'Registro');
+  XLSX.writeFile(wb, 'Plantilla_ManoDeObra.xlsx');
+  showToast('✓ Plantilla descargada correctamente');
+}
+
+function cargarDesdeExcel(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var wb = XLSX.read(e.target.result, { type: 'binary', cellText: true, cellDates: false });
+      var ws = wb.Sheets[wb.SheetNames[0]];
+      var data = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: '' });
+      if (data.length < 2) { showToast('⚠ El archivo no tiene datos', true); return; }
+
+      // Find header row
+      var headerRow = data[0];
+      var colEnviado = -1, colOrden = -1, colIni = -1, colFin = -1, colFactor = -1, colAct = -1, colObs = -1;
+      headerRow.forEach(function(h, i) {
+        var h2 = String(h).toLowerCase().trim();
+        if (h2 === 'enviado') colEnviado = i;
+        else if (h2.indexOf('orden') > -1 || h2 === 'op') colOrden = i;
+        else if (h2.indexOf('inicio') > -1 || h2 === 'hora inicio') colIni = i;
+        else if (h2.indexOf('fin') > -1 || h2 === 'hora fin') colFin = i;
+        else if (h2 === 'factor') colFactor = i;
+        else if (h2.indexOf('actividad') > -1) colAct = i;
+        else if (h2.indexOf('observ') > -1 || h2 === 'obs') colObs = i;
+      });
+
+      if (colOrden === -1 || colIni === -1 || colFin === -1 || colAct === -1) {
+        showToast('⚠ El archivo no tiene el formato correcto', true); return;
+      }
+
+      // Filter rows without X in Enviado column
+      var filas = [];
+      for (var i = 1; i < data.length; i++) {
+        var row = data[i];
+        if (!row || row.every(function(c) { return !c; })) continue;
+        var enviado = colEnviado > -1 ? String(row[colEnviado]).trim().toLowerCase() : '';
+        if (enviado === 'x' || enviado === 'X') continue;
+        filas.push({
+          orden: colOrden > -1 ? String(row[colOrden]).trim() : '',
+          ini: colIni > -1 ? String(row[colIni]).trim() : '',
+          fin: colFin > -1 ? String(row[colFin]).trim() : '',
+          factor: colFactor > -1 ? String(row[colFactor]).trim() : '1',
+          act: colAct > -1 ? String(row[colAct]).trim() : '',
+          obs: colObs > -1 ? String(row[colObs]).trim() : ''
+        });
+      }
+
+      if (filas.length === 0) {
+        showToast('⚠ No hay filas nuevas para cargar (todas marcadas con X)', true);
+        document.getElementById('file-input').value = '';
+        return;
+      }
+
+      // Clear current rows and load new ones
+      document.getElementById('orders-body-desktop').innerHTML = '';
+      document.getElementById('orders-body-mobile').innerHTML = '';
+      rowCount = 0;
+
+      filas.forEach(function(f) {
+        addRow();
+        var id = rowCount;
+        var opEl = document.getElementById('op-' + id);
+        var iniEl = document.getElementById('ini-' + id);
+        var finEl = document.getElementById('fin-' + id);
+        var factorEl = document.getElementById('factor-' + id);
+        var actEl = document.getElementById('act-' + id);
+        var obsEl = document.getElementById('obs-' + id);
+        if (opEl) opEl.value = f.orden;
+        if (iniEl) iniEl.value = f.ini;
+        if (finEl) finEl.value = f.fin;
+        if (factorEl) factorEl.value = f.factor || '1';
+        if (actEl) actEl.value = f.act;
+        if (obsEl) obsEl.value = f.obs;
+        calcRow(id);
+      });
+
+      updateValidator();
+      showToast('✓ ' + filas.length + ' fila(s) cargadas desde Excel');
+      document.getElementById('file-input').value = '';
+    } catch(err) {
+      showToast('⚠ Error al leer el archivo: ' + err.message, true);
+    }
+  };
+  reader.readAsBinaryString(file);
+}
+
+document.getElementById('fecha').value=h.getFullYear()+'-'+String(h.getMonth()+1).padStart(2,'0')+'-'+String(h.getDate()).padStart(2,'0');})();
 updateSemana();
 rowCount = 0;
 for (var i = 0; i < 5; i++) addRow();
