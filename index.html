@@ -823,6 +823,10 @@ window.addEventListener('offline', updateOnlineStatus);
 updateOnlineStatus();
 
 (function(){var h=new Date();function descargarPlantilla() {
+  if (typeof XLSX === 'undefined') {
+    showToast('⚠ Librería no cargada. Verifica tu conexión a internet.', true);
+    return;
+  }
   var wb = XLSX.utils.book_new();
   var headers = [['Enviado', 'Orden (OP)', 'Hora inicio', 'Hora fin', 'Factor', 'Actividad', 'Observaciones']];
   var ws = XLSX.utils.aoa_to_sheet(headers);
