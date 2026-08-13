@@ -838,6 +838,25 @@ function descargarPlantilla() {
   showToast('✓ Plantilla descargada correctamente');
 }
 
+function excelTimeToHHMM(val) {
+  if (!val) return '';
+  var str = String(val).trim();
+  // Already in HH:MM format
+  if (/^\d{1,2}:\d{2}/.test(str)) {
+    var parts = str.split(':');
+    return String(parseInt(parts[0])).padStart(2,'0') + ':' + parts[1].substring(0,2);
+  }
+  // Excel time as decimal (e.g. 0.291666 = 07:00)
+  var num = parseFloat(str);
+  if (!isNaN(num) && num >= 0 && num < 1) {
+    var totalMins = Math.round(num * 24 * 60);
+    var h = Math.floor(totalMins / 60);
+    var m = totalMins % 60;
+    return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+  }
+  return str;
+}
+
 function cargarDesdeExcel(event) {
   var file = event.target.files[0];
   if (!file) return;
@@ -905,8 +924,8 @@ function cargarDesdeExcel(event) {
         var actEl = document.getElementById('act-' + id);
         var obsEl = document.getElementById('obs-' + id);
         if (opEl) opEl.value = f.orden;
-        if (iniEl) iniEl.value = f.ini;
-        if (finEl) finEl.value = f.fin;
+        if (iniEl) iniEl.value = excelTimeToHHMM(f.ini);
+        if (finEl) finEl.value = excelTimeToHHMM(f.fin);
         if (factorEl) factorEl.value = f.factor || '1';
         if (actEl) actEl.value = f.act;
         if (obsEl) obsEl.value = f.obs;
