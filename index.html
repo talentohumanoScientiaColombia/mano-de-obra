@@ -769,11 +769,7 @@ function getWeekNumber(dateStr) {
 }
 
 function updateSemana() {
-  var fecha = 
-
-
-
-document.getElementById('fecha').value;
+  var fecha = document.getElementById('fecha').value;
   var el = document.getElementById('semana');
   if (!fecha) { el.textContent = '—'; return; }
   el.textContent = getWeekNumber(fecha);
@@ -822,7 +818,8 @@ window.addEventListener('online', updateOnlineStatus);
 window.addEventListener('offline', updateOnlineStatus);
 updateOnlineStatus();
 
-(function(){var h=new Date();function descargarPlantilla() {
+// descargarPlantilla defined at global scope
+function descargarPlantilla() {
   if (typeof XLSX === 'undefined') {
     showToast('⚠ Librería no cargada. Verifica tu conexión a internet.', true);
     return;
@@ -925,11 +922,6 @@ function cargarDesdeExcel(event) {
   };
   reader.readAsBinaryString(file);
 }
-
-document.getElementById('fecha').value=h.getFullYear()+'-'+String(h.getMonth()+1).padStart(2,'0')+'-'+String(h.getDate()).padStart(2,'0');})();
-updateSemana();
-rowCount = 0;
-for (var i = 0; i < 5; i++) addRow();
 
 function mostrarFilasFallidas(payload, fallidos) {
   // Remove existing retry panel if any
@@ -1137,6 +1129,15 @@ function generarPDF() {
 
   doc.save('Comprobante_ManoDeObra_' + r0.fecha + '.pdf');
 }
+
+// Page init
+(function(){
+  var h = new Date();
+  document.getElementById('fecha').value = h.getFullYear()+'-'+String(h.getMonth()+1).padStart(2,'0')+'-'+String(h.getDate()).padStart(2,'0');
+  updateSemana();
+  rowCount = 0;
+  for (var i = 0; i < 5; i++) addRow();
+})();
 </script>
 </body>
 </html>
