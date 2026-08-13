@@ -446,11 +446,13 @@ function calcRow(id) {
   var p1 = ini.split(':'), p2 = fin.split(':');
   var mins = (parseInt(p2[0]) * 60 + parseInt(p2[1])) - (parseInt(p1[0]) * 60 + parseInt(p1[1]));
   if (mins <= 0) { chip.textContent = 'Revisar'; chip.className = 'horas-chip warn'; updateValidator(); return null; }
-  var baseHours = parseFloat((mins / 60).toFixed(2));
-  var factor = factorEl ? (parseFloat(factorEl.value) || 1) : 1;
+  var factor = factorEl ? (parseInt(factorEl.value) || 1) : 1;
   if (factor < 1) { factor = 1; if (factorEl) factorEl.value = 1; }
-  var total = parseFloat((baseHours * factor).toFixed(2));
-  var h = Math.floor(total), m = Math.round((total - h) * 60);
+  // Calculate in minutes to avoid decimal rounding errors
+  var totalMins = mins * factor;
+  var h = Math.floor(totalMins / 60);
+  var m = totalMins % 60;
+  var total = parseFloat((totalMins / 60).toFixed(2));
   var txt = h > 0 ? (m > 0 ? h + 'h ' + m + 'm' : h + 'h') : m + 'm';
   chip.textContent = txt;
   chip.className = 'horas-chip';
