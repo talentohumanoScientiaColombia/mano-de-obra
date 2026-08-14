@@ -838,10 +838,10 @@ function excelTimeToHHMM(val) {
   if (!val) return '';
   var str = String(val).trim();
 
-  // Normalize: remove internal spaces in a.m./p.m. → am/pm
+  // Normalize: remove internal spaces in a.m./p.m. → AM/PM
   var normalized = str.replace(/a\.\s*m\./gi, 'AM').replace(/p\.\s*m\./gi, 'PM');
 
-  // Format 12h: "7:00 AM", "02:30 PM", "12:45 PM"
+  // Format 12h explicit: "7:00 AM", "02:30 PM", "12:45 PM"
   var match12 = normalized.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)/i);
   if (match12) {
     var h = parseInt(match12[1]);
@@ -852,19 +852,25 @@ function excelTimeToHHMM(val) {
     return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
   }
 
-  // Format 24h: "07:00", "14:30"
+  // Format 24h text: "07:00", "14:30"
   var match24 = str.match(/^(\d{1,2}):(\d{2})/);
   if (match24) {
-    return String(parseInt(match24[1])).padStart(2,'0') + ':' + match24[2].substring(0,2);
+    var h24 = parseInt(match24[1]);
+    var m24 = match24[2].substring(0,2);
+    // If hour < 6, assume PM (daytime only operation)
+    if (h24 < 6) h24 += 12;
+    return String(h24).padStart(2,'0') + ':' + m24;
   }
 
   // Excel time as decimal (e.g. 0.291666 = 07:00)
   var num = parseFloat(str);
   if (!isNaN(num) && num >= 0 && num < 1) {
     var totalMins = Math.round(num * 24 * 60);
-    var h2 = Math.floor(totalMins / 60);
-    var m2 = totalMins % 60;
-    return String(h2).padStart(2,'0') + ':' + String(m2).padStart(2,'0');
+    var hd = Math.floor(totalMins / 60);
+    var md = totalMins % 60;
+    // If hour < 6, assume PM
+    if (hd < 6) hd += 12;
+    return String(hd).padStart(2,'0') + ':' + String(md).padStart(2,'0');
   }
 
   return str;
