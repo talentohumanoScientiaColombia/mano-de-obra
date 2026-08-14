@@ -672,7 +672,7 @@ document.getElementById('fecha').value;
     btn.textContent = 'Enviando ' + (index + 1) + ' de ' + payload.length + '...';
 
     // Direct CORS POST with real confirmation from Google Sheets
-    function intentarEnvio(record, intentos, onSuccess, onFail) {
+    function intentarEnvio(record, onSuccess, onFail) {
       var formData = new FormData();
       formData.append('data', JSON.stringify(record));
       fetch(SCRIPT_URL, {
@@ -682,16 +682,13 @@ document.getElementById('fecha').value;
         return response.json();
       }).then(function(data) {
         if (data.result === 'ok') { onSuccess(); }
-        else if (intentos > 1) { intentarEnvio(record, intentos - 1, onSuccess, onFail); }
         else { onFail(); }
       }).catch(function() {
-        if (intentos > 1) {
-          setTimeout(function() { intentarEnvio(record, intentos - 1, onSuccess, onFail); }, 1500);
-        } else { onFail(); }
+        onFail();
       });
     }
 
-    intentarEnvio(payload[index], 3, function() {
+    intentarEnvio(payload[index], function() {
       enviados++;
       btn.textContent = '✓ Fila ' + (index + 1) + ' confirmada — enviando ' + (index + 2) + ' de ' + payload.length + '...';
       enviarUno(index + 1);
@@ -840,19 +837,33 @@ function descargarPlantilla() {
 function excelTimeToHHMM(val) {
   if (!val) return '';
   var str = String(val).trim();
-  // Already in HH:MM format
-  if (/^\d{1,2}:\d{2}/.test(str)) {
-    var parts = str.split(':');
-    return String(parseInt(parts[0])).padStart(2,'0') + ':' + parts[1].substring(0,2);
+
+  // Format 12h: "7:00 AM", "02:30 PM", "7:00 a. m.", "2:30 p. m."
+  var match12 = str.match(/^(\d{1,2}):(\d{2})\s*(a\.?\s*m\.?|p\.?\s*m\.?)/i);
+  if (match12) {
+    var h = parseInt(match12[1]);
+    var m = parseInt(match12[2]);
+    var period = match12[3].replace(/[\s\.]/g, '').toLowerCase();
+    if (period === 'pm' && h !== 12) h += 12;
+    if (period === 'am' && h === 12) h = 0;
+    return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
   }
+
+  // Format 24h: "07:00", "14:30"
+  var match24 = str.match(/^(\d{1,2}):(\d{2})/);
+  if (match24) {
+    return String(parseInt(match24[1])).padStart(2,'0') + ':' + match24[2].substring(0,2);
+  }
+
   // Excel time as decimal (e.g. 0.291666 = 07:00)
   var num = parseFloat(str);
   if (!isNaN(num) && num >= 0 && num < 1) {
     var totalMins = Math.round(num * 24 * 60);
-    var h = Math.floor(totalMins / 60);
-    var m = totalMins % 60;
-    return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+    var h2 = Math.floor(totalMins / 60);
+    var m2 = totalMins % 60;
+    return String(h2).padStart(2,'0') + ':' + String(m2).padStart(2,'0');
   }
+
   return str;
 }
 
@@ -982,49 +993,39 @@ function reenviarFila(filaNum) {
   var btn = document.getElementById('retry-btn-' + filaNum);
   if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
 
-  function intentar(intentos) {
-    var formData = new FormData();
-    formData.append('data', JSON.stringify(record));
-    fetch(SCRIPT_URL, { method: 'POST', body: formData })
-      .then(function(response) { return response.json(); })
-      .then(function(data) {
-        if (data.result === 'ok') {
-          var row = document.getElementById('retry-row-' + filaNum);
-          if (row) {
-            row.style.background = '#E8F2ED';
-            row.style.borderColor = '#B8D9C6';
-            row.innerHTML = '<div style="font-size:13px; color:#1A5C3A;">' +
-              '✓ <strong>Fila ' + filaNum + '</strong> confirmada por Google Sheets &mdash; ' +
-              '<span style="font-family:monospace; background:#d4eade; padding:1px 6px; border-radius:4px;">' + record.orden + '</span> ' +
-              record.actividad +
-            '</div>';
-          }
-          showToast('✓ Fila ' + filaNum + ' enviada correctamente');
-          // Check if all retries done
-          var pendientes = document.querySelectorAll('#retry-panel button:not(:disabled)');
-          if (pendientes.length === 0) {
-            setTimeout(function() {
-              var panel = document.getElementById('retry-panel');
-              if (panel) panel.remove();
-            }, 3000);
-          }
-        } else if (intentos > 1) {
-          setTimeout(function() { intentar(intentos - 1); }, 1500);
-        } else {
-          if (btn) { btn.disabled = false; btn.textContent = 'Reintentar'; }
-          showToast('⚠ Fila ' + filaNum + ' sigue sin llegar. Intenta de nuevo.', true);
+  var formData2 = new FormData();
+  formData2.append('data', JSON.stringify(record));
+  fetch(SCRIPT_URL, { method: 'POST', body: formData2 })
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      if (data.result === 'ok') {
+        var row = document.getElementById('retry-row-' + filaNum);
+        if (row) {
+          row.style.background = '#E8F2ED';
+          row.style.borderColor = '#B8D9C6';
+          row.innerHTML = '<div style="font-size:13px; color:#1A5C3A;">' +
+            '✓ <strong>Fila ' + filaNum + '</strong> confirmada por Google Sheets &mdash; ' +
+            '<span style="font-family:monospace; background:#d4eade; padding:1px 6px; border-radius:4px;">' + record.orden + '</span> ' +
+            record.actividad +
+          '</div>';
         }
-      })
-      .catch(function() {
-        if (intentos > 1) {
-          setTimeout(function() { intentar(intentos - 1); }, 1500);
-        } else {
-          if (btn) { btn.disabled = false; btn.textContent = 'Reintentar'; }
-          showToast('⚠ Fila ' + filaNum + ' sigue sin llegar. Intenta de nuevo.', true);
+        showToast('✓ Fila ' + filaNum + ' enviada correctamente');
+        var pendientes = document.querySelectorAll('#retry-panel button:not(:disabled)');
+        if (pendientes.length === 0) {
+          setTimeout(function() {
+            var panel = document.getElementById('retry-panel');
+            if (panel) panel.remove();
+          }, 3000);
         }
-      });
-  }
-  intentar(3);
+      } else {
+        if (btn) { btn.disabled = false; btn.textContent = 'Reintentar'; }
+        showToast('⚠ Fila ' + filaNum + ' sigue sin llegar. Intenta de nuevo.', true);
+      }
+    })
+    .catch(function() {
+      if (btn) { btn.disabled = false; btn.textContent = 'Reintentar'; }
+      showToast('⚠ Fila ' + filaNum + ' sigue sin llegar. Intenta de nuevo.', true);
+    });
 }
 
 function mostrarBotonPDF(registros) {
