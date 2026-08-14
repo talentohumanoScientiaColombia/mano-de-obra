@@ -991,7 +991,10 @@ function mostrarFilasFallidas(payload, fallidos) {
         '<span style="font-family:monospace; background:#F5F4F0; padding:1px 6px; border-radius:4px;">' + record.orden + '</span> ' +
         record.actividad + ' &mdash; <strong style="color:#1A5C3A">' + record.total + 'h</strong>' +
       '</div>' +
-      '<button onclick="reenviarFila(' + filaNum + ')" id="retry-btn-' + filaNum + '" style="background:#1A5C3A;color:#fff;border:none;padding:7px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;font-family:DM Sans,sans-serif;">Reenviar</button>' +
+      '<div style="display:flex; gap:8px;">' +
+        '<button onclick="consultarFila(' + filaNum + ')" id="consultar-btn-' + filaNum + '" style="background:#1A5C3A;color:#fff;border:none;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;font-family:DM Sans,sans-serif;">Consultar si llegó</button>' +
+        '<button onclick="reenviarFila(' + filaNum + ')" id="retry-btn-' + filaNum + '" style="background:#6B6860;color:#fff;border:none;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;font-family:DM Sans,sans-serif;">Reenviar</button>' +
+      '</div>' +
     '</div>';
   });
 
@@ -1000,6 +1003,64 @@ function mostrarFilasFallidas(payload, fallidos) {
 
   var actionsEl = document.querySelector('.actions');
   actionsEl.parentNode.insertBefore(panel, actionsEl.nextSibling);
+}
+
+function consultarFila(filaNum) {
+  var payload = window._retryPayload;
+  if (!payload) return;
+  var record = payload[filaNum - 1];
+  if (!record) return;
+
+  var btnC = document.getElementById('consultar-btn-' + filaNum);
+  var btnR = document.getElementById('retry-btn-' + filaNum);
+  if (btnC) { btnC.disabled = true; btnC.textContent = 'Consultando...'; }
+
+  var params = new URLSearchParams({
+    action: 'check',
+    quincena: record.quincena,
+    semana: record.semana,
+    fecha: record.fecha,
+    orden: record.orden,
+    auxiliares: record.auxiliares,
+    h_ini: record.h_ini,
+    h_fin: record.h_fin,
+    total: record.total,
+    actividad: record.actividad,
+    lider: record.lider,
+    obs: record.obs || ''
+  });
+
+  fetch(SCRIPT_URL + '?' + params.toString(), { method: 'GET' })
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      if (data.existe === true) {
+        var row = document.getElementById('retry-row-' + filaNum);
+        if (row) {
+          row.style.background = '#E8F2ED';
+          row.style.borderColor = '#B8D9C6';
+          row.innerHTML = '<div style="font-size:13px; color:#1A5C3A;">' +
+            '✓ <strong>Fila ' + filaNum + '</strong> ya fue recibida por Google Sheets &mdash; ' +
+            '<span style="font-family:monospace; background:#d4eade; padding:1px 6px; border-radius:4px;">' + record.orden + '</span> ' +
+            record.actividad +
+          '</div>';
+        }
+        showToast('✓ Fila ' + filaNum + ' confirmada — ya estaba en Google Sheets');
+        var pendientes = document.querySelectorAll('#retry-panel button:not(:disabled)');
+        if (pendientes.length === 0) {
+          setTimeout(function() {
+            var panel = document.getElementById('retry-panel');
+            if (panel) panel.remove();
+          }, 3000);
+        }
+      } else {
+        if (btnC) { btnC.disabled = false; btnC.textContent = 'Consultar si llegó'; }
+        showToast('⚠ Fila ' + filaNum + ' NO está en Google Sheets — usa Reenviar', true);
+      }
+    })
+    .catch(function() {
+      if (btnC) { btnC.disabled = false; btnC.textContent = 'Consultar si llegó'; }
+      showToast('⚠ No se pudo consultar. Verifica tu conexión.', true);
+    });
 }
 
 function reenviarFila(filaNum) {
