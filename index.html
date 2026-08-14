@@ -661,9 +661,14 @@ document.getElementById('fecha').value;
         showToast('✓ ' + enviados + ' de ' + payload.length + ' registros confirmados por Google Sheets');
         var savedPayload = payload.slice();
         limpiarTodo();
-        mostrarBotonPDF(savedPayload);
+        setTimeout(function() { mostrarBotonPDF(savedPayload); }, 100);
       } else {
         showToast('⚠ ' + enviados + ' confirmados, ' + fallidos.length + ' no llegaron. Ver detalle abajo.', true);
+        // Show PDF with only confirmed rows
+        var confirmedPayload = payload.filter(function(_, idx) {
+          return fallidos.indexOf(idx + 1) === -1;
+        });
+        if (confirmedPayload.length > 0) mostrarBotonPDF(confirmedPayload);
         mostrarFilasFallidas(payload, fallidos);
       }
       return;
@@ -672,7 +677,7 @@ document.getElementById('fecha').value;
     btn.textContent = 'Enviando ' + (index + 1) + ' de ' + payload.length + '...';
 
     // Direct CORS POST with real confirmation from Google Sheets
-    function intentarEnvio(record, onSuccess, onFail) {
+    function intentarEnvio(record, intentos, onSuccess, onFail) {
       var formData = new FormData();
       formData.append('data', JSON.stringify(record));
       fetch(SCRIPT_URL, {
@@ -682,13 +687,17 @@ document.getElementById('fecha').value;
         return response.json();
       }).then(function(data) {
         if (data.result === 'ok') { onSuccess(); }
-        else { onFail(); }
+        else if (intentos > 1) {
+          setTimeout(function() { intentarEnvio(record, intentos - 1, onSuccess, onFail); }, 1500);
+        } else { onFail(); }
       }).catch(function() {
-        onFail();
+        if (intentos > 1) {
+          setTimeout(function() { intentarEnvio(record, intentos - 1, onSuccess, onFail); }, 1500);
+        } else { onFail(); }
       });
     }
 
-    intentarEnvio(payload[index], function() {
+    intentarEnvio(payload[index], 2, function() {
       enviados++;
       btn.textContent = '✓ Fila ' + (index + 1) + ' confirmada — enviando ' + (index + 2) + ' de ' + payload.length + '...';
       enviarUno(index + 1);
