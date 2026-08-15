@@ -681,15 +681,20 @@ document.getElementById('fecha').value;
     function intentarEnvio(record, onSuccess, onFail) {
       var formData = new FormData();
       formData.append('data', JSON.stringify(record));
+      var controller = new AbortController();
+      var timeout = setTimeout(function() { controller.abort(); }, 15000);
       fetch(SCRIPT_URL, {
         method: 'POST',
-        body: formData
+        body: formData,
+        signal: controller.signal
       }).then(function(response) {
+        clearTimeout(timeout);
         return response.json();
       }).then(function(data) {
         if (data.result === 'ok') { onSuccess(); }
         else { onFail(); }
       }).catch(function() {
+        clearTimeout(timeout);
         onFail();
       });
     }
