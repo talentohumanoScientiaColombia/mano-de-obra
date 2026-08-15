@@ -1015,7 +1015,8 @@ function consultarFila(filaNum) {
     action: 'check',
     fecha: record.fecha,
     orden: record.orden,
-    actividad: record.actividad
+    actividad: record.actividad,
+    total: record.total
   });
 
   fetch(SCRIPT_URL + '?' + params.toString(), { method: 'GET' })
