@@ -534,6 +534,22 @@ function showToast(msg, isError) {
   setTimeout(function() { t.className = 'toast'; }, 3500);
 }
 
+function intentarEnvio(record, onSuccess, onFail) {
+  var formData = new FormData();
+  formData.append('data', JSON.stringify(record));
+  fetch(SCRIPT_URL, {
+    method: 'POST',
+    body: formData
+  }).then(function(response) {
+    return response.json();
+  }).then(function(data) {
+    if (data.result === 'ok') { onSuccess(); }
+    else { onFail(); }
+  }).catch(function() {
+    onFail();
+  });
+}
+
 function guardarTodo() {
   var quincena   = document.getElementById('quincena').value;
   var fecha      = 
@@ -677,22 +693,6 @@ document.getElementById('fecha').value;
     btn.textContent = 'Enviando ' + (index + 1) + ' de ' + payload.length + '...';
 
     // Direct CORS POST with real confirmation from Google Sheets
-    function intentarEnvio(record, onSuccess, onFail) {
-      var formData = new FormData();
-      formData.append('data', JSON.stringify(record));
-      fetch(SCRIPT_URL, {
-        method: 'POST',
-        body: formData
-      }).then(function(response) {
-        return response.json();
-      }).then(function(data) {
-        if (data.result === 'ok') { onSuccess(); }
-        else { onFail(); }
-      }).catch(function() {
-        onFail();
-      });
-    }
-
     intentarEnvio(payload[index], function() {
       enviados++;
       btn.textContent = '✓ Fila ' + (index + 1) + ' confirmada — enviando ' + (index + 2) + ' de ' + payload.length + '...';
