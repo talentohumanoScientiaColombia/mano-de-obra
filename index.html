@@ -642,7 +642,8 @@ document.getElementById('fecha').value;
       showToast('⚠ Completa todos los campos de la orden ' + (i + 1), true);
       valid = false; break;
     }
-    payload.push({ quincena: quincena, semana: semana, fecha: fecha, orden: op, auxiliares: auxGen, h_ini: ini, h_fin: fin, total: tot, actividad: act, lider: liderGen, obs: obs });
+    var rowId = Date.now().toString(36) + Math.random().toString(36).substring(2,7);
+    payload.push({ id: rowId, quincena: quincena, semana: semana, fecha: fecha, orden: op, auxiliares: auxGen, h_ini: ini, h_fin: fin, total: tot, actividad: act, lider: liderGen, obs: obs });
   }
 
   if (!valid) return;
@@ -1013,10 +1014,7 @@ function consultarFila(filaNum) {
 
   var params = new URLSearchParams({
     action: 'check',
-    fecha: record.fecha,
-    orden: record.orden,
-    actividad: record.actividad,
-    total: record.total
+    id: record.id
   });
 
   fetch(SCRIPT_URL + '?' + params.toString(), { method: 'GET' })
