@@ -679,56 +679,19 @@ document.getElementById('fecha').value;
 
     // Direct CORS POST with real confirmation from Google Sheets
     function intentarEnvio(record, onSuccess, onFail) {
-      var iframeId = 'submit-iframe-' + Date.now();
-      var formId = 'submit-form-' + Date.now();
-
-      var iframe = document.createElement('iframe');
-      iframe.id = iframeId;
-      iframe.name = iframeId;
-      iframe.style.display = 'none';
-      document.body.appendChild(iframe);
-
-      var form = document.createElement('form');
-      form.id = formId;
-      form.method = 'POST';
-      form.action = SCRIPT_URL;
-      form.target = iframeId;
-      form.style.display = 'none';
-
-      var input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = 'data';
-      input.value = JSON.stringify(record);
-      form.appendChild(input);
-      document.body.appendChild(form);
-
-      var timeout = setTimeout(function() {
-        cleanup();
+      var formData = new FormData();
+      formData.append('data', JSON.stringify(record));
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: formData
+      }).then(function(response) {
+        return response.json();
+      }).then(function(data) {
+        if (data.result === 'ok') { onSuccess(); }
+        else { onFail(); }
+      }).catch(function() {
         onFail();
-      }, 15000);
-
-      iframe.onload = function() {
-        clearTimeout(timeout);
-        try {
-          var response = iframe.contentDocument || iframe.contentWindow.document;
-          var text = response.body ? response.body.innerText || response.body.textContent : '';
-          var json = JSON.parse(text);
-          cleanup();
-          if (json.result === 'ok') { onSuccess(); }
-          else { onFail(); }
-        } catch(err) {
-          cleanup();
-          // If we can't read response but form submitted, assume success
-          onSuccess();
-        }
-      };
-
-      function cleanup() {
-        try { document.body.removeChild(iframe); } catch(e) {}
-        try { document.body.removeChild(form); } catch(e) {}
-      }
-
-      form.submit();
+      });
     }
 
     intentarEnvio(payload[index], function() {
