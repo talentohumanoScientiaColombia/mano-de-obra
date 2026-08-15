@@ -1021,13 +1021,9 @@ function consultarFila(filaNum) {
     semana: record.semana,
     fecha: record.fecha,
     orden: record.orden,
-    auxiliares: record.auxiliares,
-    h_ini: record.h_ini,
-    h_fin: record.h_fin,
     total: record.total,
     actividad: record.actividad,
-    lider: record.lider,
-    obs: record.obs || ''
+    lider: record.lider
   });
 
   fetch(SCRIPT_URL + '?' + params.toString(), { method: 'GET' })
