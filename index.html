@@ -683,22 +683,11 @@ document.getElementById('fecha').value;
       formData.append('data', JSON.stringify(record));
       fetch(SCRIPT_URL, {
         method: 'POST',
-        mode: 'no-cors',
         body: formData
-      }).then(function() {
-        // Verify with GET using ID
-        if (record.id) {
-          var params = new URLSearchParams({ action: 'check', id: record.id });
-          return fetch(SCRIPT_URL + '?' + params.toString(), { method: 'GET' });
-        }
-        onSuccess();
-        return null;
       }).then(function(response) {
-        if (!response) return;
         return response.json();
       }).then(function(data) {
-        if (!data) return;
-        if (data.existe === true) { onSuccess(); }
+        if (data.result === 'ok') { onSuccess(); }
         else { onFail(); }
       }).catch(function() {
         onFail();
