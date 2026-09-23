@@ -543,7 +543,7 @@ function intentarEnvio(record, onSuccess, onFail) {
   }).then(function(response) {
     return response.json();
   }).then(function(data) {
-    if (data.result === 'ok') { onSuccess(); }
+    if (data.result === 'ok') { onSuccess(data); }
     else { onFail(); }
   }).catch(function() {
     onFail();
@@ -667,8 +667,15 @@ document.getElementById('fecha').value;
   btn.disabled = true;
   btn.textContent = 'Enviando ' + payload.length + ' registro(s)...';
 
+  // Nuevo envío: quitar panel de fallidas y comprobante del envío anterior
+  var oldPanel = document.getElementById('retry-panel'); if (oldPanel) oldPanel.remove();
+  var oldPdf = document.getElementById('pdf-btn-wrap'); if (oldPdf) oldPdf.remove();
+
   var enviados = 0;
   var fallidos = [];
+
+  // Estado del lote: payload completo + qué filas confirmó Google Sheets
+  window._lote = { payload: payload, confirmados: payload.map(function() { return false; }) };
 
   function enviarUno(index) {
     if (index >= payload.length) {
@@ -676,19 +683,11 @@ document.getElementById('fecha').value;
       btn.innerHTML = '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Enviar todos los registros';
       if (fallidos.length === 0) {
         showToast('✓ ' + enviados + ' de ' + payload.length + ' registros confirmados por Google Sheets');
-        var savedPayload = payload.slice();
-        window._lastPayload = savedPayload;
         limpiarTodo();
-        setTimeout(function() { mostrarBotonPDF(savedPayload); }, 100);
+        setTimeout(function() { mostrarBotonPDF(); }, 100);
       } else {
         showToast('⚠ ' + enviados + ' confirmados, ' + fallidos.length + ' no llegaron. Ver detalle abajo.', true);
-        // Store full payload for PDF updates after reenvio
-        window._lastPayload = payload.slice();
-        // Show PDF with only confirmed rows
-        var confirmedPayload = payload.filter(function(_, idx) {
-          return fallidos.indexOf(idx + 1) === -1;
-        });
-        if (confirmedPayload.length > 0) mostrarBotonPDF(confirmedPayload);
+        mostrarBotonPDF();
         mostrarFilasFallidas(payload, fallidos);
       }
       return;
@@ -699,6 +698,7 @@ document.getElementById('fecha').value;
     // Direct CORS POST with real confirmation from Google Sheets
     intentarEnvio(payload[index], function() {
       enviados++;
+      window._lote.confirmados[index] = true;
       btn.textContent = '✓ Fila ' + (index + 1) + ' confirmada — enviando ' + (index + 2) + ' de ' + payload.length + '...';
       enviarUno(index + 1);
     }, function() {
@@ -712,51 +712,8 @@ document.getElementById('fecha').value;
 
 function limpiarTodo() {
   document.getElementById('quincena').value = '';
-  // Limit factor to aux-general value
-function limitFactor(id) {
-  var auxGen = parseInt(document.getElementById('aux-general').value) || 1;
-  var factorEl = document.getElementById('factor-' + id);
-  if (factorEl) {
-    var val = parseInt(factorEl.value) || 1;
-    if (val > auxGen) {
-      factorEl.value = auxGen;
-      calcRow(id);
-    }
-    if (val < 1) {
-      factorEl.value = 1;
-      calcRow(id);
-    }
-    factorEl.max = auxGen;
-  }
-}
-
-function updateFactorLimits() {
-  var rows = getRows();
-  for (var i = 0; i < rows.length; i++) {
-    var rid = rows[i].id.replace('row-', '');
-    limitFactor(rid);
-  }
-  updateValidator();
-}
-
-// Online/offline banner
-function updateOnlineStatus() {
-  var banner = document.getElementById('offline-banner');
-  if (!navigator.onLine) {
-    banner.style.display = 'block';
-  } else {
-    banner.style.display = 'none';
-  }
-}
-window.addEventListener('online', updateOnlineStatus);
-window.addEventListener('offline', updateOnlineStatus);
-updateOnlineStatus();
-
-(function(){var h=new Date();
-
-
-
-document.getElementById('fecha').value=h.getFullYear()+'-'+String(h.getMonth()+1).padStart(2,'0')+'-'+String(h.getDate()).padStart(2,'0');})();
+  var h = new Date();
+  document.getElementById('fecha').value = h.getFullYear() + '-' + String(h.getMonth()+1).padStart(2,'0') + '-' + String(h.getDate()).padStart(2,'0');
   document.getElementById('semana').textContent = '—'; updateSemana();
   document.getElementById('orders-body-desktop').innerHTML = '';
   document.getElementById('orders-body-mobile').innerHTML = '';
@@ -970,8 +927,22 @@ function cargarDesdeExcel(event) {
   reader.readAsBinaryString(file);
 }
 
+// ===== Panel de filas sin confirmar =====
+// Flujo: 1) Consultar si llegó  →  si llegó: verde, sin más acciones
+//                               →  si no llegó: se habilita Reenviar
+//        2) Reenviar → al confirmar: verde y entra al comprobante
+
+var ESTILO_BTN = 'color:#fff;border:none;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:500;white-space:nowrap;font-family:DM Sans,sans-serif;';
+
+function estiloBoton(btn, activo, color) {
+  if (!btn) return;
+  btn.disabled = !activo;
+  btn.style.background = activo ? color : '#C9C6BE';
+  btn.style.cursor = activo ? 'pointer' : 'not-allowed';
+  btn.style.opacity = activo ? '1' : '0.7';
+}
+
 function mostrarFilasFallidas(payload, fallidos) {
-  // Remove existing retry panel if any
   var existing = document.getElementById('retry-panel');
   if (existing) existing.remove();
 
@@ -979,21 +950,22 @@ function mostrarFilasFallidas(payload, fallidos) {
   panel.id = 'retry-panel';
   panel.style.cssText = 'margin-top:16px; background:#FDF0EE; border:1px solid #EF9A9A; border-radius:14px; padding:1.25rem;';
 
-  var html = '<p style="font-size:13px; font-weight:600; color:#C0392B; margin-bottom:12px;">' +
-    '⚠ Las siguientes filas no llegaron a Google Sheets. Haz clic en Reenviar para cada una:</p>';
+  var html = '<p id="retry-titulo" style="font-size:13px; font-weight:600; color:#C0392B; margin-bottom:12px;">' +
+    '⚠ Estas filas no recibieron confirmación de Google Sheets. Primero presiona <u>Consultar si llegó</u> en cada una:</p>';
 
   fallidos.forEach(function(filaNum) {
     var record = payload[filaNum - 1];
     if (!record) return;
-    html += '<div style="background:#fff; border:1px solid #F5C6C2; border-radius:10px; padding:10px 14px; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; gap:12px;" id="retry-row-' + filaNum + '">' +
+    html += '<div data-pendiente="1" style="background:#fff; border:1px solid #F5C6C2; border-radius:10px; padding:10px 14px; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;" id="retry-row-' + filaNum + '">' +
       '<div style="font-size:13px; color:#1C1B18;">' +
         '<strong>Fila ' + filaNum + '</strong> &mdash; ' +
         '<span style="font-family:monospace; background:#F5F4F0; padding:1px 6px; border-radius:4px;">' + record.orden + '</span> ' +
         record.actividad + ' &mdash; <strong style="color:#1A5C3A">' + record.total + 'h</strong>' +
+        '<div id="retry-estado-' + filaNum + '" style="font-size:12px; color:#6B6860; margin-top:3px;"></div>' +
       '</div>' +
       '<div style="display:flex; gap:8px;">' +
-        '<button onclick="consultarFila(' + filaNum + ')" id="consultar-btn-' + filaNum + '" style="background:#1A5C3A;color:#fff;border:none;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;font-family:DM Sans,sans-serif;">Consultar si llegó</button>' +
-        '<button onclick="reenviarFila(' + filaNum + ')" id="retry-btn-' + filaNum + '" style="background:#6B6860;color:#fff;border:none;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;font-family:DM Sans,sans-serif;">Reenviar</button>' +
+        '<button onclick="consultarFila(' + filaNum + ')" id="consultar-btn-' + filaNum + '" style="background:#1A5C3A;cursor:pointer;' + ESTILO_BTN + '">Consultar si llegó</button>' +
+        '<button onclick="reenviarFila(' + filaNum + ')" id="retry-btn-' + filaNum + '" disabled title="Primero consulta si llegó" style="background:#C9C6BE;cursor:not-allowed;opacity:0.7;' + ESTILO_BTN + '">Reenviar</button>' +
       '</div>' +
     '</div>';
   });
@@ -1005,6 +977,34 @@ function mostrarFilasFallidas(payload, fallidos) {
   actionsEl.parentNode.insertBefore(panel, actionsEl.nextSibling);
 }
 
+function filaEnVerde(filaNum, mensaje) {
+  var record = window._retryPayload[filaNum - 1];
+  var row = document.getElementById('retry-row-' + filaNum);
+  if (!row) return;
+  row.removeAttribute('data-pendiente');
+  row.style.background = '#E8F2ED';
+  row.style.borderColor = '#B8D9C6';
+  row.innerHTML = '<div style="font-size:13px; color:#1A5C3A;">' +
+    '✓ <strong>Fila ' + filaNum + '</strong> ' + mensaje + ' &mdash; ' +
+    '<span style="font-family:monospace; background:#d4eade; padding:1px 6px; border-radius:4px;">' + record.orden + '</span> ' +
+    record.actividad +
+  '</div>';
+  marcarConfirmada(filaNum);
+  revisarPanelCompleto();
+}
+
+function revisarPanelCompleto() {
+  var quedan = document.querySelectorAll('#retry-panel [data-pendiente="1"]');
+  if (quedan.length > 0) return;
+  var panel = document.getElementById('retry-panel');
+  if (!panel) return;
+  panel.style.background = '#E8F2ED';
+  panel.style.borderColor = '#B8D9C6';
+  var titulo = document.getElementById('retry-titulo');
+  if (titulo) { titulo.style.color = '#1A5C3A'; titulo.innerHTML = '✓ Todas las filas quedaron confirmadas en Google Sheets'; }
+  setTimeout(function() { var p = document.getElementById('retry-panel'); if (p) p.remove(); }, 4000);
+}
+
 function consultarFila(filaNum) {
   var payload = window._retryPayload;
   if (!payload) return;
@@ -1013,50 +1013,39 @@ function consultarFila(filaNum) {
 
   var btnC = document.getElementById('consultar-btn-' + filaNum);
   var btnR = document.getElementById('retry-btn-' + filaNum);
-  if (btnC) { btnC.disabled = true; btnC.textContent = 'Consultando...'; }
+  var estado = document.getElementById('retry-estado-' + filaNum);
 
-  // If no ID (old records), disable consult and show message
   if (!record.id) {
-    if (btnC) { btnC.disabled = true; btnC.textContent = 'Sin ID'; }
+    estiloBoton(btnC, false);
+    btnC.textContent = 'Sin ID';
     showToast('⚠ Este registro no tiene ID. Verifica en Google Sheets manualmente.', true);
     return;
   }
 
-  var params = new URLSearchParams({
-    action: 'check',
-    id: record.id
-  });
+  estiloBoton(btnC, false);
+  btnC.textContent = 'Consultando...';
 
+  var params = new URLSearchParams({ action: 'check', id: record.id });
   fetch(SCRIPT_URL + '?' + params.toString(), { method: 'GET' })
     .then(function(response) { return response.json(); })
     .then(function(data) {
       if (data.existe === true) {
-        var row = document.getElementById('retry-row-' + filaNum);
-        if (row) {
-          row.style.background = '#E8F2ED';
-          row.style.borderColor = '#B8D9C6';
-          row.innerHTML = '<div style="font-size:13px; color:#1A5C3A;">' +
-            '✓ <strong>Fila ' + filaNum + '</strong> ya fue recibida por Google Sheets &mdash; ' +
-            '<span style="font-family:monospace; background:#d4eade; padding:1px 6px; border-radius:4px;">' + record.orden + '</span> ' +
-            record.actividad +
-          '</div>';
-        }
+        // Ya llegó: verde y sin más acciones
+        filaEnVerde(filaNum, 'ya estaba en Google Sheets');
         showToast('✓ Fila ' + filaNum + ' confirmada — ya estaba en Google Sheets');
-        var pendientes = document.querySelectorAll('#retry-panel button:not(:disabled)');
-        if (pendientes.length === 0) {
-          setTimeout(function() {
-            var panel = document.getElementById('retry-panel');
-            if (panel) panel.remove();
-          }, 3000);
-        }
       } else {
-        if (btnC) { btnC.disabled = false; btnC.textContent = 'Consultar si llegó'; }
-        showToast('⚠ Fila ' + filaNum + ' NO está en Google Sheets — usa Reenviar', true);
+        // No llegó: se bloquea Consultar y se habilita Reenviar
+        btnC.textContent = 'No ha llegado';
+        estiloBoton(btnR, true, '#C0392B');
+        btnR.title = '';
+        if (estado) { estado.style.color = '#C0392B'; estado.textContent = 'No está en Google Sheets. Presiona Reenviar.'; }
+        showToast('⚠ Fila ' + filaNum + ' NO está en Google Sheets — presiona Reenviar', true);
       }
     })
     .catch(function() {
-      if (btnC) { btnC.disabled = false; btnC.textContent = 'Consultar si llegó'; }
-      showToast('⚠ No se pudo consultar. Verifica tu conexión.', true);
+      estiloBoton(btnC, true, '#1A5C3A');
+      btnC.textContent = 'Consultar si llegó';
+      showToast('⚠ No se pudo consultar. Verifica tu conexión e intenta de nuevo.', true);
     });
 }
 
@@ -1066,60 +1055,68 @@ function reenviarFila(filaNum) {
   var record = payload[filaNum - 1];
   if (!record) return;
 
-  var btn = document.getElementById('retry-btn-' + filaNum);
-  if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+  var btnR = document.getElementById('retry-btn-' + filaNum);
+  var estado = document.getElementById('retry-estado-' + filaNum);
+  estiloBoton(btnR, false);
+  btnR.textContent = 'Enviando...';
 
-  function onReenvioSuccess() {
-    var row = document.getElementById('retry-row-' + filaNum);
-    if (row) {
-      row.style.background = '#E8F2ED';
-      row.style.borderColor = '#B8D9C6';
-      row.innerHTML = '<div style="font-size:13px; color:#1A5C3A;">' +
-        '✓ <strong>Fila ' + filaNum + '</strong> confirmada por Google Sheets &mdash; ' +
-        '<span style="font-family:monospace; background:#d4eade; padding:1px 6px; border-radius:4px;">' + record.orden + '</span> ' +
-        record.actividad +
-      '</div>';
+  intentarEnvio(record, function(data) {
+    if (data && data.duplicado) {
+      filaEnVerde(filaNum, 'ya estaba en Google Sheets (no se duplicó)');
+      showToast('✓ Fila ' + filaNum + ' ya estaba en Google Sheets — no se duplicó');
+    } else {
+      filaEnVerde(filaNum, 'enviada y confirmada por Google Sheets');
+      showToast('✓ Fila ' + filaNum + ' enviada y confirmada — agregada al comprobante');
     }
-    // Add reenvied record to PDF payload
-    if (window._lastPayload) {
-      var alreadyIn = window._lastPayload.some(function(r) { return r.orden === record.orden && r.actividad === record.actividad && r.h_ini === record.h_ini; });
-      if (!alreadyIn) window._lastPayload.push(record);
-    }
-    showToast('✓ Fila ' + filaNum + ' enviada correctamente');
-    var pendientes = document.querySelectorAll('#retry-panel button:not(:disabled)');
-    if (pendientes.length === 0) {
-      setTimeout(function() {
-        var panel = document.getElementById('retry-panel');
-        if (panel) panel.remove();
-        // Update PDF button
-        mostrarBotonPDF(window._lastPayload);
-      }, 3000);
-    }
-  }
-
-  function onReenvioFail() {
-    if (btn) { btn.disabled = false; btn.textContent = 'Reintentar'; }
-    showToast('⚠ Fila ' + filaNum + ' sigue sin llegar. Intenta de nuevo.', true);
-  }
-
-  intentarEnvio(record, onReenvioSuccess, onReenvioFail);
+  }, function() {
+    // Sin confirmación: volver a consultar antes de reenviar otra vez
+    var btnC = document.getElementById('consultar-btn-' + filaNum);
+    btnR.textContent = 'Reenviar';
+    estiloBoton(btnR, false);
+    estiloBoton(btnC, true, '#1A5C3A');
+    btnC.textContent = 'Consultar si llegó';
+    if (estado) { estado.style.color = '#C0392B'; estado.textContent = 'No hubo confirmación. Consulta de nuevo si llegó.'; }
+    showToast('⚠ Fila ' + filaNum + ' sin confirmación — vuelve a consultar si llegó', true);
+  });
 }
 
-function mostrarBotonPDF(registros) {
+function marcarConfirmada(filaNum) {
+  if (!window._lote) return;
+  window._lote.confirmados[filaNum - 1] = true;
+  mostrarBotonPDF();
+  var todas = window._lote.confirmados.every(function(c) { return c; });
+  if (todas) {
+    showToast('✓ Las ' + window._lote.payload.length + ' filas están confirmadas en Google Sheets');
+    limpiarTodo();
+  }
+}
+
+function mostrarBotonPDF() {
+  if (!window._lote) return;
+  var hayConfirmadas = window._lote.confirmados.some(function(c) { return c; });
   var existing = document.getElementById('pdf-btn-wrap');
   if (existing) existing.remove();
   var wrap = document.createElement('div');
   wrap.id = 'pdf-btn-wrap';
   wrap.style.cssText = 'margin-top:16px;text-align:center;';
   wrap.innerHTML = '<button onclick="generarPDF()" style="background:#1A5C3A;color:#fff;border:none;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;font-family:DM Sans,sans-serif;display:inline-flex;align-items:center;gap:8px;"><svg fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\" stroke-width=\"2\" width=\"16\" height=\"16\"><path d=\"M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z\"/><polyline points=\"14 2 14 8 20 8\"/><line x1=\"16\" y1=\"13\" x2=\"8\" y2=\"13\"/><line x1=\"16\" y1=\"17\" x2=\"8\" y2=\"17\"/></svg>Descargar comprobante PDF</button>';
+  if (!hayConfirmadas) return;
   var actionsEl = document.querySelector('.actions');
   actionsEl.parentNode.insertBefore(wrap, actionsEl.nextSibling);
-  window._lastPayload = registros;
 }
 
 function generarPDF() {
-  var registros = window._lastPayload;
-  if (!registros || registros.length === 0) return;
+  var lote = window._lote;
+  if (!lote) return;
+  var registros = [];
+  var pendientes = [];
+  lote.payload.forEach(function(r, idx) {
+    if (lote.confirmados[idx]) registros.push({ fila: idx + 1, r: r });
+    else pendientes.push(idx + 1);
+  });
+  if (registros.length === 0) return;
+  var filasOriginales = registros.map(function(x) { return x.fila; });
+  registros = registros.map(function(x) { return x.r; });
 
   var r0 = registros[0];
   var totalGeneral = 0;
@@ -1190,7 +1187,7 @@ function generarPDF() {
 
   // Table
   var tableRows = registros.map(function(r, i) {
-    return [i + 1, r.orden, r.h_ini, r.h_fin, r.total + 'h', r.actividad, r.obs || '—'];
+    return [filasOriginales[i], r.orden, r.h_ini, r.h_fin, r.total + 'h', r.actividad, r.obs || '—'];
   });
 
   doc.autoTable({
@@ -1218,10 +1215,26 @@ function generarPDF() {
   doc.setFillColor(232, 242, 237);
   doc.setDrawColor(184, 217, 198);
   doc.roundedRect(margin, finalY, usable, 9, 2, 2, 'FD');
+  // Chulito dibujado (la fuente del PDF no tiene el símbolo ✓)
+  doc.setDrawColor(26, 92, 58);
+  doc.setLineWidth(0.5);
+  doc.line(margin + 3, finalY + 4.6, margin + 4.2, finalY + 5.8);
+  doc.line(margin + 4.2, finalY + 5.8, margin + 6.4, finalY + 3.2);
+  doc.setLineWidth(0.2);
   doc.setTextColor(26, 92, 58);
   doc.setFontSize(7.5);
   doc.setFont('helvetica', 'normal');
-  doc.text('✓ ' + registros.length + ' registros confirmados por Google Sheets — ' + new Date().toLocaleString('es-CO'), margin + 3, finalY + 6);
+  doc.text(registros.length + ' de ' + lote.payload.length + ' registros confirmados por Google Sheets — ' + new Date().toLocaleString('es-CO'), margin + 8, finalY + 6);
+
+  if (pendientes.length > 0) {
+    var warnY = finalY + 12;
+    doc.setFillColor(253, 240, 238);
+    doc.setDrawColor(239, 154, 154);
+    doc.roundedRect(margin, warnY, usable, 9, 2, 2, 'FD');
+    doc.setTextColor(192, 57, 43);
+    doc.setFont('helvetica', 'bold');
+    doc.text('ATENCIÓN: fila(s) ' + pendientes.join(', ') + ' sin confirmar en Google Sheets. Este comprobante está incompleto.', margin + 3, warnY + 6);
+  }
 
   doc.save('Comprobante_ManoDeObra_' + r0.fecha + '.pdf');
 }
