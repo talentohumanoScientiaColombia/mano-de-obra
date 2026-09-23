@@ -181,7 +181,7 @@
       <div class="resp-item"><div class="resp-name">Yonnier Torres 1</div><div class="resp-area">Invernadero Frijol</div></div>
       <div class="resp-item"><div class="resp-name">Yonnier Torres 2</div><div class="resp-area">Invernadero Persilys</div></div>
       <div class="resp-item"><div class="resp-name">Yonnier Torres 3</div><div class="resp-area">Invernadero Neocal</div></div>
-      <div class="resp-item"><div class="resp-name">Juan Hernández</div><div class="resp-area">Logística</div></div>
+      <div class="resp-item"><div class="resp-name">Natalia Herrera</div><div class="resp-area">Logística</div></div>
       <div class="resp-item"><div class="resp-name">Edwin Estupe 1</div><div class="resp-area">Laboratorio Predacius</div></div>
       <div class="resp-item"><div class="resp-name">Edwin Estupe 2</div><div class="resp-area">Laboratorio Trichograma</div></div>
     </div>
@@ -276,7 +276,7 @@
           <option value="Yonnier Torres 1">Yonnier Torres 1</option>
           <option value="Yonnier Torres 2">Yonnier Torres 2</option>
           <option value="Yonnier Torres 3">Yonnier Torres 3</option>
-          <option value="Juan Hernández">Juan Hernández</option>
+          <option value="Natalia Herrera">Natalia Herrera</option>
           <option value="Edwin Estupe 1">Edwin Estupe 1</option>
           <option value="Edwin Estupe 2">Edwin Estupe 2</option>
         </select>
@@ -357,7 +357,7 @@ var LIDERES = [
   { val: "Yonnier Torres 1",    label: "Yonnier Torres 1" },
   { val: "Yonnier Torres 2",    label: "Yonnier Torres 2" },
   { val: "Yonnier Torres 3",    label: "Yonnier Torres 3" },
-  { val: "Juan Hernández",      label: "Juan Hernández" },
+  { val: "Natalia Herrera",      label: "Natalia Herrera" },
   { val: "Edwin Estupe 1",      label: "Edwin Estupe 1" },
   { val: "Edwin Estupe 2",      label: "Edwin Estupe 2" }
 ];
@@ -677,10 +677,13 @@ document.getElementById('fecha').value;
       if (fallidos.length === 0) {
         showToast('✓ ' + enviados + ' de ' + payload.length + ' registros confirmados por Google Sheets');
         var savedPayload = payload.slice();
+        window._lastPayload = savedPayload;
         limpiarTodo();
         setTimeout(function() { mostrarBotonPDF(savedPayload); }, 100);
       } else {
         showToast('⚠ ' + enviados + ' confirmados, ' + fallidos.length + ' no llegaron. Ver detalle abajo.', true);
+        // Store full payload for PDF updates after reenvio
+        window._lastPayload = payload.slice();
         // Show PDF with only confirmed rows
         var confirmedPayload = payload.filter(function(_, idx) {
           return fallidos.indexOf(idx + 1) === -1;
@@ -1012,6 +1015,13 @@ function consultarFila(filaNum) {
   var btnR = document.getElementById('retry-btn-' + filaNum);
   if (btnC) { btnC.disabled = true; btnC.textContent = 'Consultando...'; }
 
+  // If no ID (old records), disable consult and show message
+  if (!record.id) {
+    if (btnC) { btnC.disabled = true; btnC.textContent = 'Sin ID'; }
+    showToast('⚠ Este registro no tiene ID. Verifica en Google Sheets manualmente.', true);
+    return;
+  }
+
   var params = new URLSearchParams({
     action: 'check',
     id: record.id
@@ -1070,12 +1080,19 @@ function reenviarFila(filaNum) {
         record.actividad +
       '</div>';
     }
+    // Add reenvied record to PDF payload
+    if (window._lastPayload) {
+      var alreadyIn = window._lastPayload.some(function(r) { return r.orden === record.orden && r.actividad === record.actividad && r.h_ini === record.h_ini; });
+      if (!alreadyIn) window._lastPayload.push(record);
+    }
     showToast('✓ Fila ' + filaNum + ' enviada correctamente');
     var pendientes = document.querySelectorAll('#retry-panel button:not(:disabled)');
     if (pendientes.length === 0) {
       setTimeout(function() {
         var panel = document.getElementById('retry-panel');
         if (panel) panel.remove();
+        // Update PDF button
+        mostrarBotonPDF(window._lastPayload);
       }, 3000);
     }
   }
