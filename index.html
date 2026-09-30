@@ -187,6 +187,8 @@
   .cal-sw.no { background: rgba(192,57,43,0.18); }
   .cal-hoy { margin-left: auto; background: var(--accent-bg); color: var(--accent-text); border: 1px solid #B8D9C6;
     border-radius: 8px; padding: 5px 12px; font-size: 12px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+  .arena { width: 16px; height: 16px; flex-shrink: 0; animation: voltear 1.6s ease-in-out infinite; }
+  @keyframes voltear { 0%, 40% { transform: rotate(0deg); } 60%, 100% { transform: rotate(180deg); } }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
@@ -710,7 +712,7 @@ document.getElementById('fecha').value;
 
   var btn = document.getElementById('btn-guardar');
   btn.disabled = true;
-  btn.textContent = 'Enviando ' + payload.length + ' registro(s)...';
+  btn.innerHTML = '<svg class="arena" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 2h14"/><path d="M5 22h14"/><path d="M17 2v4.2a2 2 0 0 1-.6 1.4L12 12l-4.4-4.4A2 2 0 0 1 7 6.2V2"/><path d="M7 22v-4.2a2 2 0 0 1 .6-1.4L12 12l4.4 4.4a2 2 0 0 1 .6 1.4V22"/><path d="M9 19h6"/></svg> Enviando ' + payload.length + (payload.length === 1 ? ' registro' : ' registros') + '… no cierres la página';
 
   // Nuevo envío: quitar panel de fallidas y comprobante del envío anterior
   var oldPanel = document.getElementById('retry-panel'); if (oldPanel) oldPanel.remove();
@@ -719,7 +721,7 @@ document.getElementById('fecha').value;
   // Estado del lote: payload completo + qué filas confirmó Google Sheets
   window._lote = { payload: payload, confirmados: payload.map(function() { return false; }) };
 
-  btn.textContent = 'Enviando ' + payload.length + ' registro(s)...';
+  btn.innerHTML = '<svg class="arena" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 2h14"/><path d="M5 22h14"/><path d="M17 2v4.2a2 2 0 0 1-.6 1.4L12 12l-4.4-4.4A2 2 0 0 1 7 6.2V2"/><path d="M7 22v-4.2a2 2 0 0 1 .6-1.4L12 12l4.4 4.4a2 2 0 0 1 .6 1.4V22"/><path d="M9 19h6"/></svg> Enviando ' + payload.length + (payload.length === 1 ? ' registro' : ' registros') + '… no cierres la página';
 
   // Todas las filas viajan en UNA sola petición. Google responde con la lista
   // de IDs que quedaron guardados; solo esas filas se dan por confirmadas.
