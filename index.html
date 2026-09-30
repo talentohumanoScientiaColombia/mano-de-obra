@@ -716,43 +716,43 @@ document.getElementById('fecha').value;
   var oldPanel = document.getElementById('retry-panel'); if (oldPanel) oldPanel.remove();
   var oldPdf = document.getElementById('pdf-btn-wrap'); if (oldPdf) oldPdf.remove();
 
-  var enviados = 0;
-  var fallidos = [];
-
   // Estado del lote: payload completo + qué filas confirmó Google Sheets
   window._lote = { payload: payload, confirmados: payload.map(function() { return false; }) };
 
-  function enviarUno(index) {
-    if (index >= payload.length) {
-      btn.disabled = false;
-      btn.innerHTML = '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Enviar todos los registros';
-      if (fallidos.length === 0) {
-        showToast('✓ ' + enviados + ' de ' + payload.length + ' registros confirmados por Google Sheets');
-        limpiarTodo();
-        setTimeout(function() { mostrarBotonPDF(); }, 100);
-      } else {
-        showToast('⚠ ' + enviados + ' confirmados, ' + fallidos.length + ' no llegaron. Ver detalle abajo.', true);
-        mostrarBotonPDF();
-        mostrarFilasFallidas(payload, fallidos);
-      }
-      return;
+  btn.textContent = 'Enviando ' + payload.length + ' registro(s)...';
+
+  // Todas las filas viajan en UNA sola petición. Google responde con la lista
+  // de IDs que quedaron guardados; solo esas filas se dan por confirmadas.
+  function terminarEnvio() {
+    btn.disabled = false;
+    btn.innerHTML = '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Enviar todos los registros';
+    var fallidos = [];
+    var enviados = 0;
+    window._lote.confirmados.forEach(function(ok, idx) { if (ok) enviados++; else fallidos.push(idx + 1); });
+    if (fallidos.length === 0) {
+      showToast('✓ ' + enviados + ' de ' + payload.length + ' registros confirmados por Google Sheets');
+      limpiarTodo();
+      setTimeout(function() { mostrarBotonPDF(); }, 100);
+    } else {
+      showToast('⚠ ' + enviados + ' confirmados, ' + fallidos.length + ' sin confirmar. Ver detalle abajo.', true);
+      mostrarBotonPDF();
+      mostrarFilasFallidas(payload, fallidos);
     }
-
-    btn.textContent = 'Enviando ' + (index + 1) + ' de ' + payload.length + '...';
-
-    // Direct CORS POST with real confirmation from Google Sheets
-    intentarEnvio(payload[index], function() {
-      enviados++;
-      window._lote.confirmados[index] = true;
-      btn.textContent = '✓ Fila ' + (index + 1) + ' confirmada — enviando ' + (index + 2) + ' de ' + payload.length + '...';
-      enviarUno(index + 1);
-    }, function() {
-      fallidos.push(index + 1);
-      enviarUno(index + 1);
-    });
   }
 
-  enviarUno(0);
+  var formData = new FormData();
+  formData.append('data', JSON.stringify(payload));
+  fetch(SCRIPT_URL, { method: 'POST', body: formData })
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      if (data.result === 'ok' && data.guardado === true && Array.isArray(data.ids)) {
+        payload.forEach(function(r, idx) {
+          if (data.ids.indexOf(String(r.id)) > -1) window._lote.confirmados[idx] = true;
+        });
+      }
+      terminarEnvio();
+    })
+    .catch(function() { terminarEnvio(); });
 }
 
 function limpiarTodo() {
