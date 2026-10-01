@@ -42,7 +42,7 @@
   .field { display: flex; flex-direction: column; gap: 5px; }
   label { font-size: 12px; font-weight: 500; color: var(--text2); display: flex; align-items: center; gap: 5px; }
   label svg { width: 13px; height: 13px; flex-shrink: 0; }
-  input[type="date"], input[type="time"], input[type="text"], input[type="number"], textarea, select {
+  input[type="date"], input[type="time"], input[type="text"], input[type="number"], input[type="password"], textarea, select {
     font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--text);
     background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
     padding: 8px 10px; width: 100%; outline: none; transition: border-color 0.15s;
@@ -189,12 +189,26 @@
     border-radius: 8px; padding: 5px 12px; font-size: 12px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; }
   .arena { width: 16px; height: 16px; flex-shrink: 0; animation: voltear 1.6s ease-in-out infinite; }
   @keyframes voltear { 0%, 40% { transform: rotate(0deg); } 60%, 100% { transform: rotate(180deg); } }
+  /* MODO ADMINISTRADOR */
+  .admin-acceso { background: none; border: none; color: var(--text3); font-size: 12px; font-family: 'DM Sans', sans-serif;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 5px; padding: 4px 8px; }
+  .admin-acceso:hover { color: var(--text2); }
+  .admin-banner { background: #FFF4D6; border-bottom: 1px solid #F0D58A; color: #7A5A00; text-align: center;
+    padding: 9px 12px; font-size: 13px; font-weight: 500; position: sticky; top: 0; z-index: 60; }
+  .admin-banner[hidden] { display: none; }
+  .admin-banner a { color: #7A5A00; font-weight: 600; }
+  .admin-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.35); display: flex; align-items: center;
+    justify-content: center; z-index: 1000; padding: 16px; }
+  .admin-modal[hidden] { display: none; }
+  .admin-box { background: var(--surface); border-radius: 14px; padding: 1.25rem; width: 340px; max-width: 100%;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.2); }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://unpkg.com/jspdf-autotable@3.5.28/dist/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
+<div id="admin-banner" class="admin-banner" hidden>🔓 Modo administrador activo — se permiten fechas pasadas · <a href="#" onclick="salirModoAdmin(); return false;">Salir</a></div>
 
 <div class="page-header">
   <div class="header-top">
@@ -380,6 +394,26 @@
     </label>
   </div>
 
+  <div style="text-align:center; margin-top:28px;">
+    <button type="button" class="admin-acceso" onclick="abrirAccesoAdmin()">
+      <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
+      <span id="admin-acceso-txt">Acceso administrador</span>
+    </button>
+  </div>
+
+</div>
+
+<div class="admin-modal" id="admin-modal" hidden onclick="if(event.target===this)cerrarAccesoAdmin()">
+  <div class="admin-box">
+    <p style="font-size:15px; font-weight:600; margin-bottom:4px;">Acceso administrador</p>
+    <p style="font-size:12.5px; color:var(--text2); margin-bottom:14px;">Permite registrar fechas pasadas para cualquier líder.</p>
+    <input type="password" id="admin-clave" placeholder="Contraseña" autocomplete="current-password" onkeydown="if(event.key==='Enter')verificarClaveAdmin()">
+    <p id="admin-error" style="font-size:12px; color:var(--danger); min-height:16px; margin-top:6px;"></p>
+    <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:8px;">
+      <button type="button" class="btn btn-clear" onclick="cerrarAccesoAdmin()">Cancelar</button>
+      <button type="button" class="btn btn-save" id="admin-entrar" style="flex:0;" onclick="verificarClaveAdmin()">Entrar</button>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -578,6 +612,7 @@ function showToast(msg, isError) {
 function intentarEnvio(record, onSuccess, onFail) {
   var formData = new FormData();
   formData.append('data', JSON.stringify(record));
+  if (modoAdmin && claveAdmin) formData.append('clave', claveAdmin);
   fetch(SCRIPT_URL, {
     method: 'POST',
     body: formData
@@ -689,7 +724,7 @@ document.getElementById('fecha').value;
       showToast('⚠ Completa todos los campos de la orden ' + (i + 1), true);
       valid = false; break;
     }
-    var rowId = Date.now().toString(36) + Math.random().toString(36).substring(2,7);
+    var rowId = (modoAdmin ? 'adm-' : '') + Date.now().toString(36) + Math.random().toString(36).substring(2,7);
     payload.push({ id: rowId, quincena: quincena, semana: semana, fecha: fecha, orden: op, auxiliares: auxGen, h_ini: ini, h_fin: fin, total: tot, actividad: act, lider: liderGen, obs: obs });
   }
 
@@ -752,16 +787,23 @@ document.getElementById('fecha').value;
     var aviso = document.createElement('div');
     aviso.id = 'retry-panel';
     aviso.style.cssText = 'margin-top:16px; background:#FDF0EE; border:1px solid #EF9A9A; border-radius:14px; padding:1.25rem; font-size:13px; color:#1C1B18; line-height:1.5;';
-    aviso.innerHTML = '<p style="font-weight:600; color:#C0392B; margin-bottom:6px;">⚠ No se envió: ya existe un registro de <strong>' + liderGen + '</strong> para el <strong>' + fechaTxt + '</strong></p>' +
-      '<p>En Google Sheets ya hay ' + data.filas + ' fila(s) con ' + data.horas + 'h para ese líder y esa fecha. Cada líder solo puede registrar una vez por fecha.</p>' +
-      '<p style="margin-top:6px; color:#6B6860;">Revisa si la fecha y el líder son correctos. Si necesitas corregir un registro ya enviado, comunícate con Talento Humano.</p>';
+    if (data.motivo === 'fecha-no-permitida') {
+      aviso.innerHTML = '<p style="font-weight:600; color:#C0392B; margin-bottom:6px;">⚠ No se envió: la fecha <strong>' + fechaTxt + '</strong> no está permitida</p>' +
+        '<p>Solo se permiten fechas de hoy en adelante o días domingo. Revisa que la fecha de tu celular o computador sea correcta.</p>';
+      showToast('⚠ La fecha ' + fechaTxt + ' no está permitida. No se envió nada.', true);
+    } else {
+      aviso.innerHTML = '<p style="font-weight:600; color:#C0392B; margin-bottom:6px;">⚠ No se envió: ya existe un registro de <strong>' + liderGen + '</strong> para el <strong>' + fechaTxt + '</strong></p>' +
+        '<p>En Google Sheets ya hay ' + data.filas + ' fila(s) con ' + data.horas + 'h para ese líder y esa fecha. Cada líder solo puede registrar una vez por fecha.</p>' +
+        '<p style="margin-top:6px; color:#6B6860;">Revisa si la fecha y el líder son correctos. Si necesitas corregir un registro ya enviado, comunícate con Talento Humano.</p>';
+      showToast('⚠ ' + liderGen + ' ya tiene registro para el ' + fechaTxt + '. No se envió nada.', true);
+    }
     var actionsEl = document.querySelector('.actions');
     actionsEl.parentNode.insertBefore(aviso, actionsEl.nextSibling);
-    showToast('⚠ ' + liderGen + ' ya tiene registro para el ' + fechaTxt + '. No se envió nada.', true);
   }
 
   var formData = new FormData();
   formData.append('data', JSON.stringify(payload));
+  if (modoAdmin && claveAdmin) formData.append('clave', claveAdmin);
   fetch(SCRIPT_URL, { method: 'POST', body: formData })
     .then(function(response) { return response.json(); })
     .then(function(data) {
@@ -818,6 +860,7 @@ function esDomingo(fechaISO) {
 // true si la fecha se puede usar: hoy, futura o cualquier domingo
 function fechaPermitida(fechaISO) {
   if (!fechaISO) return false;
+  if (modoAdmin) return true; // el administrador puede usar fechas pasadas
   return fechaISO >= hoyISO() || esDomingo(fechaISO);
 }
 
@@ -1406,6 +1449,70 @@ function generarPDF() {
   }
 
   doc.save('Comprobante_ManoDeObra_' + r0.fecha + '.pdf');
+}
+
+
+// ===== MODO ADMINISTRADOR =====
+// La contraseña NO está en este archivo: la verifica el Apps Script.
+// En modo administrador se permiten fechas pasadas; el resto de reglas sigue igual.
+var modoAdmin = false;
+var claveAdmin = '';
+
+function abrirAccesoAdmin() {
+  if (modoAdmin) { salirModoAdmin(); return; }
+  document.getElementById('admin-modal').hidden = false;
+  document.getElementById('admin-error').textContent = '';
+  var inp = document.getElementById('admin-clave');
+  inp.value = '';
+  setTimeout(function() { inp.focus(); }, 50);
+}
+
+function cerrarAccesoAdmin() {
+  document.getElementById('admin-modal').hidden = true;
+}
+
+function verificarClaveAdmin() {
+  var clave = document.getElementById('admin-clave').value;
+  var err = document.getElementById('admin-error');
+  var btn = document.getElementById('admin-entrar');
+  if (!clave) { err.textContent = 'Escribe la contraseña.'; return; }
+  btn.disabled = true; btn.textContent = 'Verificando...'; err.textContent = '';
+  var params = new URLSearchParams({ action: 'admin', clave: clave });
+  fetch(SCRIPT_URL + '?' + params.toString())
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      btn.disabled = false; btn.textContent = 'Entrar';
+      if (data.admin === true) {
+        claveAdmin = clave;
+        activarModoAdmin();
+        cerrarAccesoAdmin();
+      } else {
+        err.textContent = 'Contraseña incorrecta.';
+      }
+    })
+    .catch(function() {
+      btn.disabled = false; btn.textContent = 'Entrar';
+      err.textContent = 'No se pudo verificar. Revisa tu conexión.';
+    });
+}
+
+function activarModoAdmin() {
+  modoAdmin = true;
+  document.getElementById('admin-banner').hidden = false;
+  document.getElementById('admin-acceso-txt').textContent = 'Salir de modo administrador';
+  showToast('🔓 Modo administrador activo — se permiten fechas pasadas');
+}
+
+function salirModoAdmin() {
+  modoAdmin = false;
+  claveAdmin = '';
+  document.getElementById('admin-banner').hidden = true;
+  document.getElementById('admin-acceso-txt').textContent = 'Acceso administrador';
+  // Si quedó una fecha que un líder no puede usar, vuelve a hoy
+  var f = document.getElementById('fecha');
+  if (f.value && !fechaPermitida(f.value)) { f.value = hoyISO(); updateSemana(); }
+  cerrarCalendario();
+  showToast('Saliste del modo administrador');
 }
 
 // Page init
