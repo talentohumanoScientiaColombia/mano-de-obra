@@ -202,6 +202,8 @@
   .admin-modal[hidden] { display: none; }
   .admin-box { background: var(--surface); border-radius: 14px; padding: 1.25rem; width: 340px; max-width: 100%;
     box-shadow: 0 12px 32px rgba(0,0,0,0.2); }
+  /* Quincena automática: se ve igual, pero no se puede cambiar a mano */
+  .quincena-auto { pointer-events: none; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
@@ -247,7 +249,7 @@
           <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
           Quincena <span class="required-star">*</span>
         </label>
-        <select id="quincena">
+        <select id="quincena" class="quincena-auto" tabindex="-1" aria-readonly="true" title="Se calcula automáticamente según la fecha" onchange="calcularQuincena()">
           <option value="">— Seleccione quincena —</option>
           <option value="1-1">1-1 · Primera quincena de Enero</option>
           <option value="1-2">1-2 · Segunda quincena de Enero</option>
@@ -629,6 +631,7 @@ function intentarEnvio(record, onSuccess, onFail) {
 }
 
 function guardarTodo() {
+  calcularQuincena();
   var quincena   = document.getElementById('quincena').value;
   var fecha      = 
 
@@ -838,8 +841,24 @@ function getWeekNumber(dateStr) {
   return week;
 }
 
+// Quincena automática según la fecha:
+// días 1 a 15 = primera quincena (M-1); días 16 a 31 = segunda quincena (M-2).
+// Ej.: 01/10 → 10-1, 15/10 → 10-1, 16/10 → 10-2, 31/10 → 10-2, 28/02 → 2-2.
+function quincenaDeFecha(fechaISO) {
+  if (!fechaISO) return '';
+  var p = fechaISO.split('-');
+  var mes = parseInt(p[1], 10);
+  var dia = parseInt(p[2], 10);
+  return mes + '-' + (dia <= 15 ? '1' : '2');
+}
+
+function calcularQuincena() {
+  document.getElementById('quincena').value = quincenaDeFecha(document.getElementById('fecha').value);
+}
+
 function updateSemana() {
   mostrarFechaTexto();
+  calcularQuincena();
   var fecha = document.getElementById('fecha').value;
   var el = document.getElementById('semana');
   if (!fecha) { el.textContent = '—'; return; }
