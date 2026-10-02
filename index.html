@@ -203,7 +203,8 @@
   .admin-box { background: var(--surface); border-radius: 14px; padding: 1.25rem; width: 340px; max-width: 100%;
     box-shadow: 0 12px 32px rgba(0,0,0,0.2); }
   /* Quincena automática: se ve igual, pero no se puede cambiar a mano */
-  .quincena-auto { pointer-events: none; }
+  .quincena-auto { display: none !important; }
+  .quincena-texto { font-size: 15px; font-weight: 500; color: var(--text); padding: 8px 0; line-height: 1.35; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
@@ -276,6 +277,7 @@
           <option value="12-1">12-1 · Primera quincena de Diciembre</option>
           <option value="12-2">12-2 · Segunda quincena de Diciembre</option>
         </select>
+        <div class="quincena-texto" id="quincena-texto">—</div>
       </div>
       <div class="field">
         <label for="fecha">
@@ -853,7 +855,10 @@ function quincenaDeFecha(fechaISO) {
 }
 
 function calcularQuincena() {
-  document.getElementById('quincena').value = quincenaDeFecha(document.getElementById('fecha').value);
+  var sel = document.getElementById('quincena');
+  sel.value = quincenaDeFecha(document.getElementById('fecha').value);
+  var txt = document.getElementById('quincena-texto');
+  if (txt) txt.textContent = sel.selectedIndex > 0 ? sel.options[sel.selectedIndex].text : '—';
 }
 
 function updateSemana() {
