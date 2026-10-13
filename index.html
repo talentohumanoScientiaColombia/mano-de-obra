@@ -205,13 +205,23 @@
   /* Quincena automática: se ve igual, pero no se puede cambiar a mano */
   .quincena-auto { display: none !important; }
   .quincena-texto { font-size: 15px; font-weight: 500; color: var(--text); padding: 8px 0; line-height: 1.35; }
+  /* GENERADOR DE CÓDIGOS */
+  .gen-panel { border-color: #F0D58A; background: #FFFBEF; }
+  .gen-panel[hidden] { display: none; }
+  .gen-grid { display: grid; grid-template-columns: 2fr 1fr auto; gap: 12px; }
+  @media (max-width: 640px) { .gen-grid { grid-template-columns: 1fr; } }
+  .gen-resultado { margin-top: 14px; text-align: center; background: var(--surface); border: 1px dashed #E0C068;
+    border-radius: 12px; padding: 14px; }
+  .gen-resultado[hidden] { display: none; }
+  .gen-codigo { font-family: 'DM Mono', monospace; font-size: 30px; font-weight: 500; letter-spacing: 0.12em; color: var(--accent); }
+  select:disabled { background: var(--surface2); color: var(--text); opacity: 1; cursor: not-allowed; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://unpkg.com/jspdf-autotable@3.5.28/dist/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
-<div id="admin-banner" class="admin-banner" hidden>🔓 Modo administrador activo — se permiten fechas pasadas · <a href="#" onclick="salirModoAdmin(); return false;">Salir</a></div>
+<div id="admin-banner" class="admin-banner" hidden><span id="admin-banner-txt"></span> · <a href="#" onclick="salirModoAdmin(); return false;">Salir</a></div>
 
 <div class="page-header">
   <div class="header-top">
@@ -240,6 +250,24 @@
 </div>
 
 <div class="container">
+
+  <div class="card gen-panel" id="gen-panel" hidden>
+    <p style="font-size:14px; font-weight:600; margin-bottom:2px;">🔑 Generar código temporal</p>
+    <p style="font-size:12.5px; color:var(--text2); margin-bottom:12px;">Para que otra persona registre un día atrasado. Sirve solo para el líder y la fecha que elijas, vence en 1 hora y se puede ingresar una sola vez.</p>
+    <div class="gen-grid">
+      <div class="field"><label for="gen-lider">Líder</label><select id="gen-lider"></select></div>
+      <div class="field"><label for="gen-fecha">Fecha a registrar</label><input type="date" id="gen-fecha"></div>
+      <button type="button" class="btn btn-save" id="gen-btn" style="align-self:end; flex:0; white-space:nowrap;" onclick="generarCodigo()">Generar código</button>
+    </div>
+    <div id="gen-resultado" class="gen-resultado" hidden>
+      <div class="gen-codigo" id="gen-codigo"></div>
+      <div id="gen-detalle" style="font-size:12.5px; color:var(--text2); margin-top:2px;"></div>
+      <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:10px;">
+        <button type="button" class="btn btn-clear" onclick="copiarCodigo()">Copiar código</button>
+        <button type="button" class="btn btn-add" onclick="copiarMensaje()">Copiar mensaje para enviar</button>
+      </div>
+    </div>
+  </div>
 
   <!-- GENERAL FIELDS -->
   <p class="section-label">Información general</p>
@@ -410,8 +438,8 @@
 <div class="admin-modal" id="admin-modal" hidden onclick="if(event.target===this)cerrarAccesoAdmin()">
   <div class="admin-box">
     <p style="font-size:15px; font-weight:600; margin-bottom:4px;">Acceso administrador</p>
-    <p style="font-size:12.5px; color:var(--text2); margin-bottom:14px;">Permite registrar fechas pasadas para cualquier líder.</p>
-    <input type="password" id="admin-clave" placeholder="Contraseña" autocomplete="current-password" onkeydown="if(event.key==='Enter')verificarClaveAdmin()">
+    <p style="font-size:12.5px; color:var(--text2); margin-bottom:14px;">Escribe la contraseña de administrador o el código temporal que te compartieron.</p>
+    <input type="password" id="admin-clave" placeholder="Contraseña o código" autocomplete="off" autocapitalize="characters" onkeydown="if(event.key==='Enter')verificarClaveAdmin()">
     <p id="admin-error" style="font-size:12px; color:var(--danger); min-height:16px; margin-top:6px;"></p>
     <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:8px;">
       <button type="button" class="btn btn-clear" onclick="cerrarAccesoAdmin()">Cancelar</button>
@@ -729,7 +757,7 @@ document.getElementById('fecha').value;
       showToast('⚠ Completa todos los campos de la orden ' + (i + 1), true);
       valid = false; break;
     }
-    var rowId = (modoAdmin ? 'adm-' : '') + Date.now().toString(36) + Math.random().toString(36).substring(2,7);
+    var rowId = (modoTemporal ? 'tmp-' : modoAdmin ? 'adm-' : '') + Date.now().toString(36) + Math.random().toString(36).substring(2,7);
     payload.push({ id: rowId, quincena: quincena, semana: semana, fecha: fecha, orden: op, auxiliares: auxGen, h_ini: ini, h_fin: fin, total: tot, actividad: act, lider: liderGen, obs: obs });
   }
 
@@ -792,7 +820,17 @@ document.getElementById('fecha').value;
     var aviso = document.createElement('div');
     aviso.id = 'retry-panel';
     aviso.style.cssText = 'margin-top:16px; background:#FDF0EE; border:1px solid #EF9A9A; border-radius:14px; padding:1.25rem; font-size:13px; color:#1C1B18; line-height:1.5;';
-    if (data.motivo === 'fecha-no-permitida') {
+    if (data.motivo === 'codigo-vencido' || data.motivo === 'codigo-invalido') {
+      aviso.innerHTML = '<p style="font-weight:600; color:#C0392B; margin-bottom:6px;">⚠ No se envió: el código temporal ' +
+        (data.motivo === 'codigo-vencido' ? 'ya venció' : 'ya no es válido') + '</p>' +
+        '<p>Pide un código nuevo al administrador. Los datos que llenaste siguen en pantalla.</p>';
+      showToast('⚠ El código temporal ya no sirve. No se envió nada.', true);
+      terminarModo();
+    } else if (data.motivo === 'codigo-limite') {
+      aviso.innerHTML = '<p style="font-weight:600; color:#C0392B; margin-bottom:6px;">⚠ No se envió: el código solo sirve para <strong>' +
+        data.lider + '</strong> el <strong>' + fechaLegible(data.fecha) + '</strong></p>';
+      showToast('⚠ El código no sirve para ese líder o esa fecha.', true);
+    } else if (data.motivo === 'fecha-no-permitida') {
       aviso.innerHTML = '<p style="font-weight:600; color:#C0392B; margin-bottom:6px;">⚠ No se envió: la fecha <strong>' + fechaTxt + '</strong> no está permitida</p>' +
         '<p>Solo se permiten fechas de hoy en adelante o días domingo. Revisa que la fecha de tu celular o computador sea correcta.</p>';
       showToast('⚠ La fecha ' + fechaTxt + ' no está permitida. No se envió nada.', true);
@@ -827,6 +865,7 @@ function limpiarTodo() {
   document.getElementById('quincena').value = '';
   var h = new Date();
   document.getElementById('fecha').value = h.getFullYear() + '-' + String(h.getMonth()+1).padStart(2,'0') + '-' + String(h.getDate()).padStart(2,'0');
+  if (modoTemporal) document.getElementById('fecha').value = modoTemporal.fecha;
   document.getElementById('semana').textContent = '—'; updateSemana();
   document.getElementById('orders-body-desktop').innerHTML = '';
   document.getElementById('orders-body-mobile').innerHTML = '';
@@ -884,6 +923,7 @@ function esDomingo(fechaISO) {
 // true si la fecha se puede usar: hoy, futura o cualquier domingo
 function fechaPermitida(fechaISO) {
   if (!fechaISO) return false;
+  if (modoTemporal) return fechaISO === modoTemporal.fecha; // código temporal: solo su fecha
   if (modoAdmin) return true; // el administrador puede usar fechas pasadas
   return fechaISO >= hoyISO() || esDomingo(fechaISO);
 }
@@ -907,6 +947,7 @@ function mostrarFechaTexto() {
 }
 
 function toggleCalendario() {
+  if (modoTemporal) { showToast('La fecha está fija: el código temporal es para el ' + fechaLegible(modoTemporal.fecha)); return; }
   var pop = document.getElementById('cal-pop');
   if (!pop.hidden) { cerrarCalendario(); return; }
   var v = document.getElementById('fecha').value || hoyISO();
@@ -1476,11 +1517,16 @@ function generarPDF() {
 }
 
 
-// ===== MODO ADMINISTRADOR =====
-// La contraseña NO está en este archivo: la verifica el Apps Script.
-// En modo administrador se permiten fechas pasadas; el resto de reglas sigue igual.
-var modoAdmin = false;
-var claveAdmin = '';
+// ===== MODO ADMINISTRADOR Y CÓDIGOS TEMPORALES =====
+// La contraseña y los códigos NO están en este archivo: los verifica el Apps Script.
+// - Contraseña principal: fechas pasadas para cualquier líder + generar códigos temporales.
+// - Código temporal: solo su líder y su fecha, vence en 1 hora, un solo ingreso.
+var modoAdmin = false;     // true con contraseña principal o con código temporal
+var modoTemporal = null;   // { codigo, lider, fecha, exp, vence } cuando se entra con código
+var claveAdmin = '';       // lo que viaja con cada envío (contraseña o CODIGO|SESION)
+var _timerCodigo = null;
+
+function fechaLegible(iso) { var p = iso.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
 
 function abrirAccesoAdmin() {
   if (modoAdmin) { salirModoAdmin(); return; }
@@ -1496,22 +1542,30 @@ function cerrarAccesoAdmin() {
 }
 
 function verificarClaveAdmin() {
-  var clave = document.getElementById('admin-clave').value;
+  var clave = document.getElementById('admin-clave').value.trim();
   var err = document.getElementById('admin-error');
   var btn = document.getElementById('admin-entrar');
-  if (!clave) { err.textContent = 'Escribe la contraseña.'; return; }
+  if (!clave) { err.textContent = 'Escribe la contraseña o el código.'; return; }
   btn.disabled = true; btn.textContent = 'Verificando...'; err.textContent = '';
   var params = new URLSearchParams({ action: 'admin', clave: clave });
   fetch(SCRIPT_URL + '?' + params.toString())
     .then(function(r) { return r.json(); })
     .then(function(data) {
       btn.disabled = false; btn.textContent = 'Entrar';
-      if (data.admin === true) {
+      if (data.admin === true && data.tipo === 'temporal') {
+        claveAdmin = data.codigo + '|' + data.sesion;
+        activarModoTemporal(data);
+        cerrarAccesoAdmin();
+      } else if (data.admin === true) {
         claveAdmin = clave;
         activarModoAdmin();
         cerrarAccesoAdmin();
+      } else if (data.motivo === 'usado') {
+        err.textContent = 'Este código ya fue usado. Pide un código nuevo al administrador.';
+      } else if (data.motivo === 'vencido') {
+        err.textContent = 'Este código ya venció. Pide un código nuevo al administrador.';
       } else {
-        err.textContent = 'Contraseña incorrecta.';
+        err.textContent = 'Contraseña o código incorrecto.';
       }
     })
     .catch(function() {
@@ -1522,25 +1576,122 @@ function verificarClaveAdmin() {
 
 function activarModoAdmin() {
   modoAdmin = true;
+  modoTemporal = null;
+  document.getElementById('admin-banner-txt').textContent = '🔓 Modo administrador activo — se permiten fechas pasadas';
   document.getElementById('admin-banner').hidden = false;
   document.getElementById('admin-acceso-txt').textContent = 'Salir de modo administrador';
+  document.getElementById('gen-panel').hidden = false;
   showToast('🔓 Modo administrador activo — se permiten fechas pasadas');
 }
 
-function salirModoAdmin() {
+function activarModoTemporal(d) {
+  modoAdmin = true;
+  modoTemporal = { codigo: d.codigo, lider: d.lider, fecha: d.fecha, exp: d.exp, vence: d.vence };
+  // Fecha y líder quedan fijos: el código solo sirve para ellos
+  document.getElementById('fecha').value = d.fecha;
+  updateSemana();
+  var lid = document.getElementById('lider-general');
+  lid.value = d.lider;
+  lid.disabled = true;
+  cerrarCalendario();
+  document.getElementById('admin-banner-txt').textContent =
+    '🔑 Código temporal ' + d.codigo + ' — ' + d.lider + ' · ' + fechaLegible(d.fecha) + ' · vence a las ' + d.vence;
+  document.getElementById('admin-banner').hidden = false;
+  document.getElementById('admin-acceso-txt').textContent = 'Salir del código temporal';
+  showToast('🔑 Código aceptado: ' + d.lider + ' · ' + fechaLegible(d.fecha));
+  clearInterval(_timerCodigo);
+  _timerCodigo = setInterval(function() {
+    if (modoTemporal && Date.now() > modoTemporal.exp) {
+      clearInterval(_timerCodigo);
+      terminarModo();
+      showToast('⏰ El código temporal venció. Pide uno nuevo al administrador.', true);
+    }
+  }, 15000);
+}
+
+// Sale de cualquier modo y deja el formulario como lo ve un líder
+function terminarModo() {
+  var eraTemporal = !!modoTemporal;
   modoAdmin = false;
+  modoTemporal = null;
   claveAdmin = '';
+  clearInterval(_timerCodigo);
   document.getElementById('admin-banner').hidden = true;
+  document.getElementById('gen-panel').hidden = true;
   document.getElementById('admin-acceso-txt').textContent = 'Acceso administrador';
-  // Si quedó una fecha que un líder no puede usar, vuelve a hoy
+  var lid = document.getElementById('lider-general');
+  lid.disabled = false;
+  if (eraTemporal) lid.value = '';
   var f = document.getElementById('fecha');
   if (f.value && !fechaPermitida(f.value)) { f.value = hoyISO(); updateSemana(); }
   cerrarCalendario();
+}
+
+function salirModoAdmin() {
+  if (modoTemporal && !confirm('Si sales, este código ya no se podrá volver a usar. ¿Deseas salir?')) return;
+  terminarModo();
   showToast('Saliste del modo administrador');
+}
+
+// Aviso al recargar o cerrar la página con un código activo (después ya no servirá)
+window.addEventListener('beforeunload', function(e) {
+  if (modoTemporal) { e.preventDefault(); e.returnValue = ''; }
+});
+
+// ----- Generar códigos (solo con la contraseña principal) -----
+function generarCodigo() {
+  var lider = document.getElementById('gen-lider').value;
+  var fecha = document.getElementById('gen-fecha').value;
+  var res = document.getElementById('gen-resultado');
+  if (!lider) { showToast('⚠ Elige el líder para el código', true); return; }
+  if (!fecha) { showToast('⚠ Elige la fecha para el código', true); return; }
+  var btn = document.getElementById('gen-btn');
+  btn.disabled = true; btn.textContent = 'Generando...';
+  var params = new URLSearchParams({ action: 'generar', clave: claveAdmin, lider: lider, fecha: fecha });
+  fetch(SCRIPT_URL + '?' + params.toString())
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      btn.disabled = false; btn.textContent = 'Generar código';
+      if (!d.ok) { showToast('⚠ No se pudo generar el código', true); return; }
+      window._ultimoCodigo = d;
+      res.hidden = false;
+      document.getElementById('gen-codigo').textContent = d.codigo;
+      document.getElementById('gen-detalle').textContent =
+        d.lider + ' · ' + fechaLegible(d.fecha) + ' · vence a las ' + d.vence + ' · un solo ingreso';
+    })
+    .catch(function() {
+      btn.disabled = false; btn.textContent = 'Generar código';
+      showToast('⚠ No se pudo generar. Revisa tu conexión.', true);
+    });
+}
+
+function copiarTexto(txt, okMsg) {
+  function fallback() {
+    var t = document.createElement('textarea'); t.value = txt; document.body.appendChild(t);
+    t.select(); try { document.execCommand('copy'); showToast(okMsg); } catch (e) { showToast('⚠ No se pudo copiar', true); }
+    t.remove();
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(function() { showToast(okMsg); }, fallback);
+  } else { fallback(); }
+}
+
+function copiarCodigo() {
+  var d = window._ultimoCodigo; if (!d) return;
+  copiarTexto(d.codigo, '✓ Código copiado');
+}
+
+function copiarMensaje() {
+  var d = window._ultimoCodigo; if (!d) return;
+  copiarTexto('Código temporal para registrar la mano de obra de ' + d.lider + ' del ' + fechaLegible(d.fecha) + ': ' + d.codigo +
+    '\nVence hoy a las ' + d.vence + ' y solo se puede ingresar una vez.' +
+    '\nEn el formulario, entra por "Acceso administrador" (al final de la página) y escribe el código.' +
+    '\nNo cierres ni recargues la página hasta terminar.', '✓ Mensaje copiado');
 }
 
 // Page init
 (function(){
+  document.getElementById('gen-lider').innerHTML = liderOptions('');
   var h = new Date();
   document.getElementById('fecha').value = h.getFullYear()+'-'+String(h.getMonth()+1).padStart(2,'0')+'-'+String(h.getDate()).padStart(2,'0');
   updateSemana();
