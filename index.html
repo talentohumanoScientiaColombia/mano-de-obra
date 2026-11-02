@@ -215,6 +215,46 @@
   .gen-resultado[hidden] { display: none; }
   .gen-codigo { font-family: 'DM Mono', monospace; font-size: 30px; font-weight: 500; letter-spacing: 0.12em; color: var(--accent); }
   select:disabled { background: var(--surface2); color: var(--text); opacity: 1; cursor: not-allowed; }
+  /* VARIOS DÍAS */
+  .lider-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 14px; }
+  .dia-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 1rem; }
+  .dia-card.con-alerta { border-color: #EF9A9A; }
+  .dia-head { display: grid; grid-template-columns: 30px 1.15fr 1.45fr 0.75fr 0.8fr 1.5fr 32px; gap: 14px; align-items: end;
+    padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); position: relative; }
+  #dias.solo .dia-head { grid-template-columns: 1.15fr 1.45fr 0.75fr 0.8fr 1.5fr; }
+  #dias.solo .dia-num, #dias.solo .dia-del { display: none; }
+  .dia-num { width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 600; font-size: 13px;
+    display: flex; align-items: center; justify-content: center; margin-bottom: 5px; }
+  .dia-del { margin-bottom: 5px; }
+  .dia-validator { display: flex; align-items: center; justify-content: space-between; gap: 8px; border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 0 10px; height: 38px; transition: background 0.3s, border-color 0.3s; }
+  .dia-validator .vlabel { font-size: 11.5px; color: var(--text2); line-height: 1.2; }
+  .dia-validator .value { font-size: 16px; font-weight: 600; white-space: nowrap; }
+  .horas-box.valid .vlabel { color: #2E7D32; }
+  .horas-box.invalid .vlabel { color: var(--danger); }
+  .dia-alert { background: var(--danger-bg); color: var(--danger); font-size: 12.5px; font-weight: 500; padding: 9px 1.25rem; border-bottom: 1px solid #F5C6C2; }
+  .dia-alert[hidden] { display: none; }
+  .dia-card .orders-table thead th { border-radius: 0 !important; }
+  .dia-mobile { padding: 10px 10px 0; }
+  .dia-add-row { display: block; width: 100%; background: none; border: none; border-top: 1px solid var(--border); text-align: left;
+    padding: 10px 1.25rem; color: var(--accent); font-size: 13px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif;
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
+  .dia-add-row:hover { background: var(--accent-bg); }
+  .btn-dia { border-style: dashed; }
+  .btn-dia[hidden] { display: none; }
+  #envio-resumen { margin-top: 16px; }
+  .res-box { border-radius: 14px; padding: 12px 16px; font-size: 13px; line-height: 1.5; color: var(--text); margin-bottom: 10px; }
+  .res-ok { background: #E8F2ED; border: 1px solid #B8D9C6; }
+  .res-bad { background: #FDF0EE; border: 1px solid #EF9A9A; }
+  .cal-day.usada { box-shadow: inset 0 -3px 0 #E0A43A; }
+  .cal-sw.usada { background: #E0A43A; }
+  @media (max-width: 900px) {
+    .dia-head, #dias.solo .dia-head { grid-template-columns: 1fr 1fr; padding: 1rem; }
+    .dia-num { grid-column: 1 / -1; }
+    .f-total { grid-column: 1 / -1; }
+    .dia-del { position: absolute; top: 10px; right: 10px; margin: 0; }
+  }
+  @media (max-width: 640px) { .lider-grid { grid-template-columns: 1fr; } }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
@@ -269,87 +309,10 @@
     </div>
   </div>
 
-  <!-- GENERAL FIELDS -->
+  <!-- LÍDER -->
   <p class="section-label">Información general</p>
   <div class="card">
-    <div class="grid3" style="margin-bottom:14px">
-      <div class="field">
-        <label for="quincena">
-          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          Quincena <span class="required-star">*</span>
-        </label>
-        <select id="quincena" class="quincena-auto" tabindex="-1" aria-readonly="true" title="Se calcula automáticamente según la fecha" onchange="calcularQuincena()">
-          <option value="">— Seleccione quincena —</option>
-          <option value="1-1">1-1 · Primera quincena de Enero</option>
-          <option value="1-2">1-2 · Segunda quincena de Enero</option>
-          <option value="2-1">2-1 · Primera quincena de Febrero</option>
-          <option value="2-2">2-2 · Segunda quincena de Febrero</option>
-          <option value="3-1">3-1 · Primera quincena de Marzo</option>
-          <option value="3-2">3-2 · Segunda quincena de Marzo</option>
-          <option value="4-1">4-1 · Primera quincena de Abril</option>
-          <option value="4-2">4-2 · Segunda quincena de Abril</option>
-          <option value="5-1">5-1 · Primera quincena de Mayo</option>
-          <option value="5-2">5-2 · Segunda quincena de Mayo</option>
-          <option value="6-1">6-1 · Primera quincena de Junio</option>
-          <option value="6-2">6-2 · Segunda quincena de Junio</option>
-          <option value="7-1">7-1 · Primera quincena de Julio</option>
-          <option value="7-2">7-2 · Segunda quincena de Julio</option>
-          <option value="8-1">8-1 · Primera quincena de Agosto</option>
-          <option value="8-2">8-2 · Segunda quincena de Agosto</option>
-          <option value="9-1">9-1 · Primera quincena de Septiembre</option>
-          <option value="9-2">9-2 · Segunda quincena de Septiembre</option>
-          <option value="10-1">10-1 · Primera quincena de Octubre</option>
-          <option value="10-2">10-2 · Segunda quincena de Octubre</option>
-          <option value="11-1">11-1 · Primera quincena de Noviembre</option>
-          <option value="11-2">11-2 · Segunda quincena de Noviembre</option>
-          <option value="12-1">12-1 · Primera quincena de Diciembre</option>
-          <option value="12-2">12-2 · Segunda quincena de Diciembre</option>
-        </select>
-        <div class="quincena-texto" id="quincena-texto">—</div>
-      </div>
-      <div class="field">
-        <label for="fecha">
-          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          Fecha <span class="required-star">*</span>
-        </label>
-        <div class="fecha-picker" id="fecha-picker">
-          <input type="hidden" id="fecha">
-          <button type="button" class="fecha-display" onclick="toggleCalendario()">
-            <span id="fecha-texto">Seleccione fecha</span>
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          </button>
-          <div class="cal-pop" id="cal-pop" hidden></div>
-        </div>
-      </div>
-      <div class="field">
-        <label>
-          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          Semana del año
-        </label>
-        <div class="horas-box" style="height:38px;">
-          <span style="font-size:13px; color:var(--text2)">Semana</span>
-          <span class="value" id="semana" style="font-size:16px">—</span>
-        </div>
-      </div>
-      <div class="field">
-        <label>
-          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          Total horas registradas
-        </label>
-        <div class="horas-box" id="validator-box" style="height:38px; transition: background 0.3s, border-color 0.3s;">
-          <span style="font-size:12px; color:var(--text2)" id="validator-label">0 / —h esperadas</span>
-          <span class="value" id="validator-value" style="font-size:16px">0h</span>
-        </div>
-      </div>
-    </div>
-    <div style="display:grid; grid-template-columns:1fr 2fr; gap:14px; margin-top:0;">
-      <div class="field">
-        <label for="aux-general">
-          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-          N° Auxiliares <span class="required-star">*</span>
-        </label>
-        <input type="number" id="aux-general" min="1" max="999" placeholder="0" oninput="updateValidator(); updateFactorLimits()">
-      </div>
+    <div class="lider-grid">
       <div class="field">
         <label for="lider-general">
           <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -368,42 +331,24 @@
           <option value="Edwin Estupe 2">Edwin Estupe 2</option>
         </select>
       </div>
+      <div class="field">
+        <label>
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Resumen
+        </label>
+        <div class="quincena-texto" id="resumen-dias">1 día · 0h de —h esperadas</div>
+      </div>
     </div>
   </div>
 
-  <!-- ORDERS -->
+  <!-- DÍAS: cada uno con su fecha, auxiliares y órdenes -->
   <p class="section-label">Órdenes de producción</p>
-
-  <!-- DESKTOP: table -->
-  <div class="card desktop-only" style="padding: 0; overflow: hidden;" id="desktop-wrap">
-    <div class="orders-wrap">
-      <table class="orders-table">
-        <thead>
-          <tr>
-            <th class="col-num">#</th>
-            <th class="col-op">Orden (OP) *</th>
-            
-            <th class="col-time">Hora inicio *</th>
-            <th class="col-time">Hora fin *</th>
-            <th class="col-horas">Factor</th><th class="col-horas">Total h.</th>
-            <th class="col-act">Actividad *</th>
-            
-            <th style="min-width:130px">Observaciones</th>
-            <th style="width:36px"></th>
-          </tr>
-        </thead>
-        <tbody id="orders-body-desktop"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- MOBILE: cards -->
-  <div id="orders-body-mobile" class="mobile-only"></div>
+  <div id="dias" class="solo"></div>
 
   <div class="actions">
-    <button class="btn btn-add" onclick="addRow()">
+    <button class="btn btn-add btn-dia" id="btn-agregar-dia" onclick="agregarDia()">
       <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Agregar orden
+      Agregar otro día
     </button>
     <button class="btn btn-save" id="btn-guardar" onclick="guardarTodo()">
       <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
@@ -478,15 +423,170 @@ function liderOptions(selectedVal) {
   return opts;
 }
 
-function addRow(preselectedLider) {
+// ===== VARIOS DÍAS =====
+// El formulario tiene un líder (arriba) y uno o más "días". Cada día tiene su propia fecha,
+// N° de auxiliares y órdenes; la quincena y la semana se calculan con la fecha de ESE día.
+var diaCount = 0;
+var ICON_TRASH = '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>';
+var ICON_CAL = '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+var ICON_RELOJ = '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+var ICON_AUX = '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>';
+var BTN_ENVIAR_HTML = '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Enviar todos los registros';
+var DIAS_SEMANA = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+
+function getDias() { return Array.prototype.slice.call(document.querySelectorAll('#dias .dia-card')); }
+function diaIds() { return getDias().map(function(el) { return parseInt(el.getAttribute('data-dia'), 10); }); }
+function fechaDia(n) { var el = document.getElementById('fecha-d' + n); return el ? el.value : ''; }
+function auxDia(n) { var el = document.getElementById('aux-d' + n); return el ? (parseInt(el.value, 10) || 0) : 0; }
+function diaDeFila(id) {
+  var r = document.getElementById('row-' + id);
+  var c = r ? r.closest('.dia-card') : null;
+  return c ? parseInt(c.getAttribute('data-dia'), 10) : null;
+}
+function fechaLegible(iso) { if (!iso) return ''; var p = iso.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
+function nombreDia(iso) { return DIAS_SEMANA[new Date(iso + 'T12:00:00').getDay()]; }
+function quincenaTexto(iso) {
+  var q = quincenaDeFecha(iso);
+  if (!q) return '—';
+  var p = q.split('-');
+  return q + ' · ' + (p[1] === '1' ? 'Primera' : 'Segunda') + ' quincena de ' + MESES[parseInt(p[0], 10) - 1];
+}
+function horasTexto(h) {
+  var mins = Math.round(h * 60), hh = Math.floor(mins / 60), mm = mins % 60;
+  return hh > 0 ? (mm > 0 ? hh + 'h ' + mm + 'm' : hh + 'h') : (mm > 0 ? mm + 'm' : '0h');
+}
+
+function crearDia(fechaISO, aux, filasIniciales) {
+  diaCount++;
+  var n = diaCount;
+  var card = document.createElement('div');
+  card.className = 'dia-card';
+  card.id = 'dia-' + n;
+  card.setAttribute('data-dia', n);
+  card.innerHTML =
+    '<div class="dia-head">' +
+      '<div class="dia-num" id="dia-num-' + n + '">1</div>' +
+      '<div class="field"><label>' + ICON_RELOJ + ' Fecha <span class="required-star">*</span></label>' +
+        '<div class="fecha-picker" id="fecha-picker-d' + n + '">' +
+          '<input type="hidden" id="fecha-d' + n + '">' +
+          '<button type="button" class="fecha-display" onclick="toggleCalendario(' + n + ')"><span id="fecha-texto-d' + n + '">Seleccione fecha</span>' + ICON_CAL.replace('<svg ', '<svg width="16" height="16" ') + '</button>' +
+          '<div class="cal-pop" id="cal-pop-d' + n + '" hidden></div>' +
+        '</div></div>' +
+      '<div class="field"><label>' + ICON_CAL + ' Quincena</label><div class="quincena-texto" id="quincena-texto-d' + n + '">—</div></div>' +
+      '<div class="field"><label>' + ICON_CAL + ' Semana del año</label><div class="quincena-texto"><span style="font-size:13px; color:var(--text2); font-weight:400">Semana</span> <span id="semana-d' + n + '">—</span></div></div>' +
+      '<div class="field"><label>' + ICON_AUX + ' N° Auxiliares <span class="required-star">*</span></label>' +
+        '<input type="number" id="aux-d' + n + '" min="1" max="999" placeholder="0" oninput="updateValidator(' + n + '); updateFactorLimits(' + n + ')"></div>' +
+      '<div class="field f-total"><label>' + ICON_RELOJ + ' Total horas del día</label>' +
+        '<div class="horas-box dia-validator" id="validator-box-d' + n + '"><span class="vlabel" id="validator-label-d' + n + '">Ingresa el N° de auxiliares</span><span class="value" id="validator-value-d' + n + '">0h</span></div></div>' +
+      '<button type="button" class="del-btn dia-del" id="dia-del-' + n + '" onclick="quitarDia(' + n + ')" title="Quitar este día">' + ICON_TRASH + '</button>' +
+    '</div>' +
+    '<div class="dia-alert" id="dia-alert-' + n + '" hidden></div>' +
+    '<div class="desktop-only"><div class="orders-wrap"><table class="orders-table"><thead><tr>' +
+      '<th class="col-num">#</th><th class="col-op">Orden (OP) *</th><th class="col-time">Hora inicio *</th><th class="col-time">Hora fin *</th>' +
+      '<th class="col-horas">Factor</th><th class="col-horas">Total h.</th><th class="col-act">Actividad *</th><th style="min-width:130px">Observaciones</th><th style="width:36px"></th>' +
+    '</tr></thead><tbody id="orders-desktop-d' + n + '"></tbody></table></div></div>' +
+    '<div class="mobile-only dia-mobile" id="orders-mobile-d' + n + '"></div>' +
+    '<button type="button" class="dia-add-row" onclick="addRow(' + n + ')">+ Agregar orden a este día</button>';
+  document.getElementById('dias').appendChild(card);
+  document.getElementById('fecha-d' + n).value = fechaISO || '';
+  if (aux) document.getElementById('aux-d' + n).value = aux;
+  for (var i = 0; i < (filasIniciales || 0); i++) addRow(n);
+  actualizarDia(n);
+  renumerarDias();
+  updateValidator(n);
+  return n;
+}
+
+function agregarDia() {
+  if (modoTemporal) { showToast('El código temporal solo sirve para el ' + fechaLegible(modoTemporal.fecha), true); return; }
+  var ids = diaIds();
+  var auxPrev = ids.length ? (document.getElementById('aux-d' + ids[ids.length - 1]).value || '') : '';
+  var n = crearDia('', auxPrev, 1);
+  var card = document.getElementById('dia-' + n);
+  card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  setTimeout(function() { toggleCalendario(n); }, 350);
+}
+
+function diaTieneDatos(n) {
+  return getRows(n).some(function(r) {
+    var id = getRowId(r);
+    return ['op-', 'ini-', 'fin-', 'act-'].some(function(p) { var el = document.getElementById(p + id); return el && el.value; });
+  });
+}
+
+function quitarDia(n) {
+  if (diaIds().length <= 1) { showToast('Debe quedar al menos un día', true); return; }
+  if (diaTieneDatos(n) && !confirm('¿Quitar el día ' + (fechaLegible(fechaDia(n)) || 'sin fecha') + ' con sus órdenes?')) return;
+  eliminarDia(n);
+}
+
+function eliminarDia(n) {
+  var card = document.getElementById('dia-' + n);
+  if (card) card.remove();
+  if (diaIds().length === 0) { limpiarTodo(); return; }
+  renumerarDias();
+  revisarAlertas();
+  actualizarResumen();
+}
+
+function renumerarDias() {
+  var dias = getDias();
+  document.getElementById('dias').classList.toggle('solo', dias.length === 1);
+  dias.forEach(function(card, i) {
+    var num = card.querySelector('.dia-num');
+    if (num) num.textContent = i + 1;
+  });
+  var btnDia = document.getElementById('btn-agregar-dia');
+  if (btnDia) btnDia.hidden = !!modoTemporal;
+  actualizarResumen();
+}
+
+// Fecha, quincena y semana de un día (todo se calcula con la fecha de ese día)
+function actualizarDia(n) {
+  var f = fechaDia(n);
+  document.getElementById('fecha-texto-d' + n).textContent = f ? fechaLegible(f) : 'Seleccione fecha';
+  document.getElementById('quincena-texto-d' + n).textContent = f ? quincenaTexto(f) : '—';
+  document.getElementById('semana-d' + n).textContent = f ? getWeekNumber(f) : '—';
+  revisarAlertas();
+}
+
+// Avisos de cada día: rechazado por Google, fecha no permitida o fecha repetida
+function revisarAlertas() {
+  var vistas = {};
+  getDias().forEach(function(card) {
+    var n = card.getAttribute('data-dia');
+    var f = fechaDia(n);
+    if (f) vistas[f] = (vistas[f] || 0) + 1;
+  });
+  getDias().forEach(function(card) {
+    var n = card.getAttribute('data-dia');
+    var f = fechaDia(n);
+    var el = document.getElementById('dia-alert-' + n);
+    var msg = '';
+    if (card.dataset.bloqueo) msg = card.dataset.bloqueo;
+    else if (f && !fechaPermitida(f)) msg = '⚠ La fecha ' + fechaLegible(f) + ' no está permitida (solo hoy, fechas futuras, sábados y domingos). Cámbiala o quita este día.';
+    else if (f && vistas[f] > 1) msg = '⚠ La fecha ' + fechaLegible(f) + ' está repetida en otro día. Junta las órdenes en un solo día o cambia la fecha.';
+    el.innerHTML = msg;
+    el.hidden = !msg;
+    card.classList.toggle('con-alerta', !!msg);
+  });
+}
+
+function actualizarResumen() {
+  var el = document.getElementById('resumen-dias');
+  if (!el) return;
+  var ids = diaIds(), tot = 0, esp = 0;
+  ids.forEach(function(n) { var e = estadoDia(n); tot += e.totalH; esp += e.expected; });
+  el.textContent = ids.length + (ids.length === 1 ? ' día' : ' días') + ' · ' + horasTexto(tot) + ' de ' + (esp ? horasTexto(esp) : '—h') + ' esperadas';
+}
+
+// ===== FILAS (órdenes) =====
+function addRow(n) {
+  if (n === undefined || n === null || typeof n !== 'number') { var ids = diaIds(); n = ids[ids.length - 1]; }
   rowCount++;
   var id = rowCount;
-  var liderSel = preselectedLider || '';
   var isMobile = window.innerWidth <= 700;
-
   if (!isMobile) {
-    // DESKTOP: table row
-    var tbody = document.getElementById('orders-body-desktop');
     var tr = document.createElement('tr');
     tr.id = 'row-' + id;
     tr.innerHTML =
@@ -498,18 +598,16 @@ function addRow(preselectedLider) {
       '<td><div class="horas-chip" id="horas-' + id + '">—</div></td>' +
       '<td><input type="text" id="act-' + id + '" placeholder="Descripción" style="min-width:160px"></td>' +
       '<td><input type="text" id="obs-' + id + '" placeholder="Opcional" style="min-width:110px"></td>' +
-      '<td><button class="del-btn" onclick="removeRow(' + id + ')" title="Eliminar"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button></td>';
-    tbody.appendChild(tr);
+      '<td><button class="del-btn" onclick="removeRow(' + id + ')" title="Eliminar">' + ICON_TRASH + '</button></td>';
+    document.getElementById('orders-desktop-d' + n).appendChild(tr);
   } else {
-    // MOBILE: card
-    var container = document.getElementById('orders-body-mobile');
     var div = document.createElement('div');
     div.id = 'row-' + id;
     div.className = 'order-card';
     div.innerHTML =
       '<div class="order-card-header">' +
         '<div class="row-num">' + id + '</div>' +
-        '<button class="del-btn" onclick="removeRow(' + id + ')"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>' +
+        '<button class="del-btn" onclick="removeRow(' + id + ')">' + ICON_TRASH + '</button>' +
       '</div>' +
       '<div class="field" style="margin-bottom:8px"><label>Orden (OP) *</label><input type="text" id="op-' + id + '" placeholder="OP-001"></div>' +
       '<div class="order-grid" style="margin-top:8px">' +
@@ -521,24 +619,39 @@ function addRow(preselectedLider) {
         '<div class="field"><label>Total horas</label><div class="horas-chip" id="horas-' + id + '">—</div></div>' +
       '</div>' +
       '<div class="field" style="margin-top:8px"><label>Actividad *</label><input type="text" id="act-' + id + '" placeholder="Descripción de la actividad"></div>' +
-
       '<div class="field" style="margin-top:8px"><label>Observaciones</label><input type="text" id="obs-' + id + '" placeholder="Opcional"></div>';
-    container.appendChild(div);
+    document.getElementById('orders-mobile-d' + n).appendChild(div);
   }
+  renumberRows(n);
+  return id;
 }
 
 function removeRow(id) {
+  var n = diaDeFila(id);
   var row = document.getElementById('row-' + id);
   if (row) row.remove();
-  renumberRows();
+  if (n !== null) { renumberRows(n); updateValidator(n); }
 }
 
-function renumberRows() {
-  var rows = document.querySelectorAll('#orders-body-desktop tr, #orders-body-mobile .order-card');
-  for (var i = 0; i < rows.length; i++) {
-    var numEl = rows[i].querySelector('.row-num');
+function renumberRows(n) {
+  getRows(n).forEach(function(r, i) {
+    var numEl = r.querySelector('.row-num');
     if (numEl) numEl.textContent = (i + 1);
+  });
+}
+
+// Filas de un día (o de todos los días, en orden, si no se indica)
+function getRows(n) {
+  if (n === undefined || n === null) {
+    var todas = [];
+    diaIds().forEach(function(d) { todas = todas.concat(getRows(d)); });
+    return todas;
   }
+  return Array.prototype.slice.call(document.querySelectorAll('#orders-desktop-d' + n + ' tr, #orders-mobile-d' + n + ' .order-card'));
+}
+
+function getRowId(tr) {
+  return tr.id.replace('row-', '');
 }
 
 function calcRow(id) {
@@ -546,99 +659,84 @@ function calcRow(id) {
   var fin = document.getElementById('fin-' + id).value;
   var factorEl = document.getElementById('factor-' + id);
   var chip = document.getElementById('horas-' + id);
-  if (!ini || !fin) { chip.textContent = '—'; chip.className = 'horas-chip'; updateValidator(); return null; }
+  var n = diaDeFila(id);
+  chip.dataset.mins = '';
+  if (!ini || !fin) { chip.textContent = '—'; chip.className = 'horas-chip'; updateValidator(n); return null; }
   var p1 = ini.split(':'), p2 = fin.split(':');
   var mins = (parseInt(p2[0]) * 60 + parseInt(p2[1])) - (parseInt(p1[0]) * 60 + parseInt(p1[1]));
-  if (mins <= 0) { chip.textContent = 'Revisar'; chip.className = 'horas-chip warn'; updateValidator(); return null; }
+  if (mins <= 0) { chip.textContent = 'Revisar'; chip.className = 'horas-chip warn'; updateValidator(n); return null; }
   var factor = factorEl ? (parseInt(factorEl.value) || 1) : 1;
   if (factor < 1) { factor = 1; if (factorEl) factorEl.value = 1; }
-  // Calculate in minutes to avoid decimal rounding errors
+  // En minutos para evitar errores de redondeo
   var totalMins = mins * factor;
-  var h = Math.floor(totalMins / 60);
-  var m = totalMins % 60;
-  var total = parseFloat((totalMins / 60).toFixed(2));
-  var txt = h > 0 ? (m > 0 ? h + 'h ' + m + 'm' : h + 'h') : m + 'm';
-  chip.textContent = txt;
+  chip.dataset.mins = totalMins;
+  chip.textContent = horasTexto(totalMins / 60);
   chip.className = 'horas-chip';
-  updateValidator();
-  return total;
+  updateValidator(n);
+  return parseFloat((totalMins / 60).toFixed(2));
 }
 
-function updateValidator() {
-  var rows = getRows();
-  var totalH = 0;
+// Total de horas, esperado (auxiliares × 7h) y diferencia de un día
+function estadoDia(n) {
+  var totalMins = 0;
+  getRows(n).forEach(function(r) {
+    var chip = document.getElementById('horas-' + getRowId(r));
+    if (chip && chip.dataset.mins) totalMins += parseInt(chip.dataset.mins, 10) || 0;
+  });
+  var totalH = parseFloat((totalMins / 60).toFixed(2));
+  var aux = auxDia(n);
+  var expected = aux * 7;
+  return { totalH: totalH, aux: aux, expected: expected, diff: parseFloat((totalH - expected).toFixed(2)) };
+}
 
-  // Get auxiliares from general field
-  var firstAux = 0;
-  var auxGenEl = document.getElementById('aux-general');
-  firstAux = auxGenEl ? (parseInt(auxGenEl.value) || 0) : 0;
-
-  for (var i = 0; i < rows.length; i++) {
-    var rid = rows[i].id.replace('row-', '');
-    var chip = document.getElementById('horas-' + rid);
-    if (chip && chip.textContent !== '—' && chip.textContent !== 'Revisar') {
-      var txt = chip.textContent;
-      var hh = 0, mm = 0;
-      if (txt.indexOf('h') > -1 && txt.indexOf('m') > -1) {
-        hh = parseInt(txt.split('h')[0]) || 0;
-        mm = parseInt(txt.split('h')[1].replace('m','').trim()) || 0;
-      } else if (txt.indexOf('h') > -1) {
-        hh = parseInt(txt.replace('h','').trim()) || 0;
-      } else if (txt.indexOf('m') > -1) {
-        mm = parseInt(txt.replace('m','').trim()) || 0;
-      }
-      totalH += hh + mm / 60;
-    }
-  }
-
-  totalH = parseFloat(totalH.toFixed(2));
-  var expected = firstAux * 7;
-
-  var box = document.getElementById('validator-box');
-  var valEl = document.getElementById('validator-value');
-  var lblEl = document.getElementById('validator-label');
+function updateValidator(n) {
+  if (n === undefined || n === null) { diaIds().forEach(function(d) { updateValidator(d); }); return; }
+  var box = document.getElementById('validator-box-d' + n);
   if (!box) return;
-
-  var hh2 = Math.floor(totalH), mm2 = Math.round((totalH - hh2) * 60);
-  var totalTxt = hh2 > 0 ? (mm2 > 0 ? hh2 + 'h ' + mm2 + 'm' : hh2 + 'h') : (mm2 > 0 ? mm2 + 'm' : '0h');
-  valEl.textContent = totalTxt;
-
-  if (firstAux === 0) {
-    box.className = 'horas-box';
-    lblEl.textContent = 'Ingresa el número de auxiliares arriba';
-    return;
-  }
-
-  var diff = parseFloat((totalH - expected).toFixed(2));
-  var tolerance = 0.01;
-  if (Math.abs(diff) <= tolerance) {
-    lblEl.textContent = '✓ ' + totalH + 'h — Exacto (' + firstAux + ' aux × 7h)';
-    box.className = 'horas-box valid';
-  } else if (diff > tolerance) {
-    lblEl.textContent = '⚠ ' + totalH + 'h — ' + diff + 'h por encima de ' + expected + 'h esperadas';
-    box.className = 'horas-box invalid';
+  var e = estadoDia(n);
+  var valEl = document.getElementById('validator-value-d' + n);
+  var lblEl = document.getElementById('validator-label-d' + n);
+  valEl.textContent = horasTexto(e.totalH);
+  if (e.aux === 0) {
+    box.className = 'horas-box dia-validator';
+    lblEl.textContent = 'Ingresa el N° de auxiliares';
+  } else if (Math.abs(e.diff) <= 0.01) {
+    lblEl.textContent = '✓ Exacto (' + e.aux + ' aux × 7h)';
+    box.className = 'horas-box dia-validator valid';
+  } else if (e.diff > 0.01) {
+    lblEl.textContent = '⚠ ' + e.diff + 'h por encima de ' + e.expected + 'h';
+    box.className = 'horas-box dia-validator invalid';
   } else {
-    lblEl.textContent = '⚠ ' + totalH + 'h de ' + expected + 'h esperadas — faltan ' + Math.abs(diff) + 'h';
-    box.className = 'horas-box invalid';
+    lblEl.textContent = '⚠ de ' + e.expected + 'h — faltan ' + Math.abs(e.diff) + 'h';
+    box.className = 'horas-box dia-validator invalid';
+  }
+  actualizarResumen();
+}
+
+// Limita el factor al N° de auxiliares del día
+function limitFactor(id) {
+  var n = diaDeFila(id);
+  var auxGen = auxDia(n) || 1;
+  var factorEl = document.getElementById('factor-' + id);
+  if (factorEl) {
+    var val = parseInt(factorEl.value) || 1;
+    if (val > auxGen) { factorEl.value = auxGen; calcRow(id); }
+    if (val < 1) { factorEl.value = 1; calcRow(id); }
+    factorEl.max = auxGen;
   }
 }
 
-function getRows() {
-  var isMobile = window.innerWidth <= 700;
-  return isMobile
-    ? document.querySelectorAll('#orders-body-mobile .order-card')
-    : document.querySelectorAll('#orders-body-desktop tr');
-}
-
-function getRowId(tr) {
-  return tr.id.replace('row-', '');
+function updateFactorLimits(n) {
+  getRows(n).forEach(function(r) { limitFactor(getRowId(r)); });
+  updateValidator(n);
 }
 
 function showToast(msg, isError) {
   var t = document.getElementById('toast');
   t.textContent = msg;
   t.className = 'toast' + (isError ? ' error' : '') + ' show';
-  setTimeout(function() { t.className = 'toast'; }, 3500);
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(function() { t.className = 'toast'; }, 3500);
 }
 
 function intentarEnvio(record, onSuccess, onFail) {
@@ -660,188 +758,185 @@ function intentarEnvio(record, onSuccess, onFail) {
   });
 }
 
+function motivoTexto(b, lider) {
+  if (b.motivo === 'fecha-no-permitida') return 'la fecha no está permitida para registrar (solo hoy, fechas futuras, sábados y domingos)';
+  if (b.motivo === 'dia-registrado') return lider + ' ya tiene ' + (b.filas || '') + ' fila(s)' + (b.horas !== undefined ? ' con ' + b.horas + 'h' : '') + ' registrada(s) para esa fecha';
+  if (b.motivo === 'no-enviado') return 'otro día del mismo envío fue rechazado y no se guardó nada; vuelve a enviarlo';
+  return 'no se pudo guardar';
+}
+
 function guardarTodo() {
-  calcularQuincena();
-  var quincena   = document.getElementById('quincena').value;
-  var fecha      = 
+  var liderGen = document.getElementById('lider-general').value;
 
-
-
-document.getElementById('fecha').value;
-  var semana     = document.getElementById('semana').textContent.trim();
-  var auxGen     = document.getElementById('aux-general').value.trim();
-  var liderGen   = document.getElementById('lider-general').value;
-
-  // Block if no internet
   if (!navigator.onLine) {
     showToast('⚠ Sin internet — los datos están guardados, envía cuando tengas conexión', true); return;
-  }
-
-  if (!quincena) {
-    showToast('⚠ Selecciona la quincena antes de enviar', true); return;
-  }
-  if (!fecha) {
-    showToast('⚠ Selecciona la fecha antes de enviar', true); return;
-  }
-  if (!fechaPermitida(fecha)) {
-    document.getElementById('fecha').value = hoyISO(); updateSemana();
-    showToast('⚠ Solo se permiten fechas de hoy en adelante o días domingo. Revisa la fecha.', true); return;
-  }
-  if (!auxGen || parseInt(auxGen) < 1) {
-    showToast('⚠ Ingresa el número de auxiliares', true); return;
   }
   if (!liderGen) {
     showToast('⚠ Selecciona el líder encargado', true); return;
   }
 
-  // Block if validator is not green
-  var validatorBox = document.getElementById('validator-box');
-  var validatorClass = validatorBox ? validatorBox.className : '';
-  var isValid = validatorClass.indexOf('valid') > -1 && validatorClass.indexOf('invalid') === -1;
+  // Un nuevo envío limpia los avisos de rechazo del envío anterior
+  getDias().forEach(function(c) { delete c.dataset.bloqueo; });
+  revisarAlertas();
 
-  // Auto-adjust if difference is less than 0.1h (6 minutes)
-  if (!isValid) {
-    var auxGenVal = parseInt(document.getElementById('aux-general').value) || 0;
-    var expected = auxGenVal * 7;
-    var rows2 = getRows();
-    var currentTotal = 0;
-    for (var j = 0; j < rows2.length; j++) {
-      var rid2 = rows2[j].id.replace('row-', '');
-      var chip2 = document.getElementById('horas-' + rid2);
-      if (chip2 && chip2.textContent !== '—' && chip2.textContent !== 'Revisar') {
-        var txt2 = chip2.textContent;
-        var hh2 = 0, mm2 = 0;
-        if (txt2.indexOf('h') > -1 && txt2.indexOf('m') > -1) {
-          hh2 = parseInt(txt2.split('h')[0]) || 0;
-          mm2 = parseInt(txt2.split('h')[1].replace('m','').trim()) || 0;
-        } else if (txt2.indexOf('h') > -1) {
-          hh2 = parseInt(txt2.replace('h','').trim()) || 0;
-        } else if (txt2.indexOf('m') > -1) {
-          mm2 = parseInt(txt2.replace('m','').trim()) || 0;
-        }
-        currentTotal += hh2 + mm2 / 60;
-      }
-    }
-    currentTotal = parseFloat(currentTotal.toFixed(2));
-    var diff2 = parseFloat((currentTotal - expected).toFixed(2));
-
-    if (Math.abs(diff2) < 0.1 && expected > 0) {
-      // Auto-adjust: store adjustment to apply to last row payload
-      window._autoAdjust = parseFloat((-diff2).toFixed(2));
-    } else {
-      showToast('⚠ El total de horas no cuadra — revisa la validación', true); return;
-    }
-  } else {
-    window._autoAdjust = 0;
-  }
-
-  var rows = getRows();
-  if (rows.length === 0) {
-    showToast('⚠ Agrega al menos una orden', true); return;
-  }
-
+  var ids = diaIds();
+  var usadas = {};
   var payload = [];
-  var valid = true;
+  var prefijo = (modoTemporal ? 'tmp-' : modoAdmin ? 'adm-' : '');
 
-  for (var i = 0; i < rows.length; i++) {
-    var id  = getRowId(rows[i]);
-    var op  = document.getElementById('op-' + id).value.trim();
-    var ini = document.getElementById('ini-' + id).value;
-    var fin = document.getElementById('fin-' + id).value;
-    var act = document.getElementById('act-' + id).value.trim();
-    var obs = document.getElementById('obs-' + id).value.trim();
-    var tot = calcRow(id);
-    var factor = document.getElementById('factor-' + id) ? (parseFloat(document.getElementById('factor-' + id).value) || 1) : 1;
-
-    if (!op || !ini || !fin || !act || !tot) {
-      showToast('⚠ Completa todos los campos de la orden ' + (i + 1), true);
-      valid = false; break;
+  for (var k = 0; k < ids.length; k++) {
+    var n = ids[k];
+    var fecha = fechaDia(n);
+    var nom = ids.length > 1 ? ' del día ' + (k + 1) : '';
+    if (!fecha) { showToast('⚠ Selecciona la fecha' + nom, true); return; }
+    var fl = fechaLegible(fecha);
+    if (!fechaPermitida(fecha)) {
+      showToast('⚠ La fecha ' + fl + ' no está permitida. Solo hoy, fechas futuras o días sábado y domingo.', true); return;
     }
-    var rowId = (modoTemporal ? 'tmp-' : modoAdmin ? 'adm-' : '') + Date.now().toString(36) + Math.random().toString(36).substring(2,7);
-    payload.push({ id: rowId, quincena: quincena, semana: semana, fecha: fecha, orden: op, auxiliares: auxGen, h_ini: ini, h_fin: fin, total: tot, actividad: act, lider: liderGen, obs: obs });
-  }
+    if (usadas[fecha]) { showToast('⚠ La fecha ' + fl + ' está en dos días. Junta sus órdenes en un solo día.', true); return; }
+    usadas[fecha] = true;
+    var aux = auxDia(n);
+    if (aux < 1) { showToast('⚠ Ingresa el número de auxiliares del ' + fl, true); return; }
+    var rows = getRows(n);
+    if (rows.length === 0) { showToast('⚠ Agrega al menos una orden al ' + fl, true); return; }
 
-  if (!valid) return;
-
-  // Post-build adjustment: recalculate total and fix last row if needed
-  var auxGenNum = parseInt(auxGen) || 0;
-  var expectedH = auxGenNum * 7;
-  if (expectedH > 0 && payload.length > 0) {
-    var payloadTotal = 0;
-    payload.forEach(function(r) { payloadTotal += parseFloat(r.total) || 0; });
-    payloadTotal = parseFloat(payloadTotal.toFixed(2));
-    var finalDiff = parseFloat((payloadTotal - expectedH).toFixed(2));
-    if (Math.abs(finalDiff) > 0 && Math.abs(finalDiff) < 0.1) {
-      var lastRow = payload[payload.length - 1];
-      lastRow.total = parseFloat((parseFloat(lastRow.total) - finalDiff).toFixed(2));
-      if (lastRow.total < 0) lastRow.total = 0;
+    // Validación de horas del día (se permite una diferencia menor a 0,1h y se ajusta en la última fila)
+    var e = estadoDia(n);
+    if (Math.abs(e.diff) > 0.01 && !(Math.abs(e.diff) < 0.1 && e.expected > 0)) {
+      showToast('⚠ Las horas del ' + fl + ' no cuadran: ' + horasTexto(e.totalH) + ' de ' + e.expected + 'h', true); return;
     }
+
+    var quincena = quincenaDeFecha(fecha);
+    var semana = String(getWeekNumber(fecha));
+    var deEsteDia = [];
+    for (var i = 0; i < rows.length; i++) {
+      var id  = getRowId(rows[i]);
+      var op  = document.getElementById('op-' + id).value.trim();
+      var ini = document.getElementById('ini-' + id).value;
+      var fin = document.getElementById('fin-' + id).value;
+      var act = document.getElementById('act-' + id).value.trim();
+      var obs = document.getElementById('obs-' + id).value.trim();
+      var tot = calcRow(id);
+      if (!op || !ini || !fin || !act || !tot) {
+        showToast('⚠ Completa todos los campos de la orden ' + (i + 1) + ' del ' + fl, true); return;
+      }
+      var rowId = prefijo + Date.now().toString(36) + Math.random().toString(36).substring(2, 7);
+      deEsteDia.push({ id: rowId, quincena: quincena, semana: semana, fecha: fecha, orden: op, auxiliares: String(aux),
+                       h_ini: ini, h_fin: fin, total: tot, actividad: act, lider: liderGen, obs: obs, _dia: n });
+    }
+    // Ajuste fino (< 0,1h) en la última fila del día
+    var sum = 0;
+    deEsteDia.forEach(function(r) { sum += parseFloat(r.total) || 0; });
+    var finalDiff = parseFloat((parseFloat(sum.toFixed(2)) - e.expected).toFixed(2));
+    if (e.expected > 0 && Math.abs(finalDiff) > 0 && Math.abs(finalDiff) < 0.1) {
+      var last = deEsteDia[deEsteDia.length - 1];
+      last.total = Math.max(0, parseFloat((parseFloat(last.total) - finalDiff).toFixed(2)));
+    }
+    payload = payload.concat(deEsteDia);
   }
 
   var btn = document.getElementById('btn-guardar');
   btn.disabled = true;
-  btn.innerHTML = '<svg class="arena" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 2h14"/><path d="M5 22h14"/><path d="M17 2v4.2a2 2 0 0 1-.6 1.4L12 12l-4.4-4.4A2 2 0 0 1 7 6.2V2"/><path d="M7 22v-4.2a2 2 0 0 1 .6-1.4L12 12l4.4 4.4a2 2 0 0 1 .6 1.4V22"/><path d="M9 19h6"/></svg> Enviando ' + payload.length + (payload.length === 1 ? ' registro' : ' registros') + '… no cierres la página';
+  var nDias = ids.length;
+  btn.innerHTML = '<svg class="arena" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 2h14"/><path d="M5 22h14"/><path d="M17 2v4.2a2 2 0 0 1-.6 1.4L12 12l-4.4-4.4A2 2 0 0 1 7 6.2V2"/><path d="M7 22v-4.2a2 2 0 0 1 .6-1.4L12 12l4.4 4.4a2 2 0 0 1 .6 1.4V22"/><path d="M9 19h6"/></svg> Enviando ' +
+    (nDias > 1 ? nDias + ' días (' : '') + payload.length + (payload.length === 1 ? ' registro' : ' registros') + (nDias > 1 ? ')' : '') + '… no cierres la página';
 
-  // Nuevo envío: quitar panel de fallidas y comprobante del envío anterior
-  var oldPanel = document.getElementById('retry-panel'); if (oldPanel) oldPanel.remove();
-  var oldPdf = document.getElementById('pdf-btn-wrap'); if (oldPdf) oldPdf.remove();
+  // Nuevo envío: quitar paneles y comprobante del envío anterior
+  ['retry-panel', 'pdf-btn-wrap', 'envio-resumen'].forEach(function(pid) { var el = document.getElementById(pid); if (el) el.remove(); });
 
-  // Estado del lote: payload completo + qué filas confirmó Google Sheets
-  window._lote = { payload: payload, confirmados: payload.map(function() { return false; }) };
+  // Estado del lote: qué filas confirmó Google y qué fechas rechazó
+  window._lote = {
+    payload: payload,
+    confirmados: payload.map(function() { return false; }),
+    bloqueados: {}   // fecha -> { fecha, motivo, filas, horas }
+  };
 
-  btn.innerHTML = '<svg class="arena" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 2h14"/><path d="M5 22h14"/><path d="M17 2v4.2a2 2 0 0 1-.6 1.4L12 12l-4.4-4.4A2 2 0 0 1 7 6.2V2"/><path d="M7 22v-4.2a2 2 0 0 1 .6-1.4L12 12l4.4 4.4a2 2 0 0 1 .6 1.4V22"/><path d="M9 19h6"/></svg> Enviando ' + payload.length + (payload.length === 1 ? ' registro' : ' registros') + '… no cierres la página';
+  function restaurarBoton() { btn.disabled = false; btn.innerHTML = BTN_ENVIAR_HTML; }
 
-  // Todas las filas viajan en UNA sola petición. Google responde con la lista
-  // de IDs que quedaron guardados; solo esas filas se dan por confirmadas.
-  function terminarEnvio() {
-    btn.disabled = false;
-    btn.innerHTML = '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Enviar todos los registros';
-    var fallidos = [];
-    var enviados = 0;
-    window._lote.confirmados.forEach(function(ok, idx) { if (ok) enviados++; else fallidos.push(idx + 1); });
-    if (fallidos.length === 0) {
-      showToast('✓ ' + enviados + ' de ' + payload.length + ' registros confirmados por Google Sheets');
-      limpiarTodo();
-      setTimeout(function() { mostrarBotonPDF(); }, 100);
-    } else {
-      showToast('⚠ ' + enviados + ' confirmados, ' + fallidos.length + ' sin confirmar. Ver detalle abajo.', true);
-      mostrarBotonPDF();
-      mostrarFilasFallidas(payload, fallidos);
-    }
-  }
-
-  // El líder ya tiene registrada esa fecha: no se guarda nada y el formulario queda como está
-  function terminarBloqueado(data) {
-    btn.disabled = false;
-    btn.innerHTML = '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Enviar todos los registros';
+  // Rechazos del código temporal: no se guarda nada y el formulario queda como está
+  function terminarCodigo(data) {
+    restaurarBoton();
     window._lote = null;
-    var p = fecha.split('-');
-    var fechaTxt = p[2] + '/' + p[1] + '/' + p[0];
     var aviso = document.createElement('div');
-    aviso.id = 'retry-panel';
-    aviso.style.cssText = 'margin-top:16px; background:#FDF0EE; border:1px solid #EF9A9A; border-radius:14px; padding:1.25rem; font-size:13px; color:#1C1B18; line-height:1.5;';
-    if (data.motivo === 'codigo-vencido' || data.motivo === 'codigo-invalido') {
+    aviso.id = 'envio-resumen';
+    aviso.className = 'res-box res-bad';
+    if (data.motivo === 'codigo-limite') {
+      aviso.innerHTML = '<p style="font-weight:600; color:#C0392B; margin-bottom:6px;">⚠ No se envió: el código solo sirve para <strong>' +
+        data.lider + '</strong> el <strong>' + fechaLegible(data.fecha) + '</strong></p>';
+      showToast('⚠ El código no sirve para ese líder o esa fecha.', true);
+    } else {
       aviso.innerHTML = '<p style="font-weight:600; color:#C0392B; margin-bottom:6px;">⚠ No se envió: el código temporal ' +
         (data.motivo === 'codigo-vencido' ? 'ya venció' : 'ya no es válido') + '</p>' +
         '<p>Pide un código nuevo al administrador. Los datos que llenaste siguen en pantalla.</p>';
       showToast('⚠ El código temporal ya no sirve. No se envió nada.', true);
       terminarModo();
-    } else if (data.motivo === 'codigo-limite') {
-      aviso.innerHTML = '<p style="font-weight:600; color:#C0392B; margin-bottom:6px;">⚠ No se envió: el código solo sirve para <strong>' +
-        data.lider + '</strong> el <strong>' + fechaLegible(data.fecha) + '</strong></p>';
-      showToast('⚠ El código no sirve para ese líder o esa fecha.', true);
-    } else if (data.motivo === 'fecha-no-permitida') {
-      aviso.innerHTML = '<p style="font-weight:600; color:#C0392B; margin-bottom:6px;">⚠ No se envió: la fecha <strong>' + fechaTxt + '</strong> no está permitida</p>' +
-        '<p>Solo se permiten fechas de hoy en adelante o días domingo. Revisa que la fecha de tu celular o computador sea correcta.</p>';
-      showToast('⚠ La fecha ' + fechaTxt + ' no está permitida. No se envió nada.', true);
-    } else {
-      aviso.innerHTML = '<p style="font-weight:600; color:#C0392B; margin-bottom:6px;">⚠ No se envió: ya existe un registro de <strong>' + liderGen + '</strong> para el <strong>' + fechaTxt + '</strong></p>' +
-        '<p>En Google Sheets ya hay ' + data.filas + ' fila(s) con ' + data.horas + 'h para ese líder y esa fecha. Cada líder solo puede registrar una vez por fecha.</p>' +
-        '<p style="margin-top:6px; color:#6B6860;">Revisa si la fecha y el líder son correctos. Si necesitas corregir un registro ya enviado, comunícate con Talento Humano.</p>';
-      showToast('⚠ ' + liderGen + ' ya tiene registro para el ' + fechaTxt + '. No se envió nada.', true);
     }
     var actionsEl = document.querySelector('.actions');
     actionsEl.parentNode.insertBefore(aviso, actionsEl.nextSibling);
+  }
+
+  function terminarEnvio() {
+    restaurarBoton();
+    var lote = window._lote;
+    var fallidos = [];
+    var enviados = 0;
+    lote.payload.forEach(function(r, idx) {
+      if (lote.confirmados[idx]) enviados++;
+      else if (!lote.bloqueados[r.fecha]) fallidos.push(idx + 1);
+    });
+
+    // Días por resolver: los rechazados se quedan en pantalla con su aviso;
+    // los días con todas sus filas confirmadas se quitan del formulario.
+    var diasLote = [];
+    lote.payload.forEach(function(r) { if (diasLote.indexOf(r._dia) === -1) diasLote.push(r._dia); });
+    var guardados = [], rechazados = [];
+    diasLote.forEach(function(n) {
+      var filasDia = lote.payload.map(function(r, i) { return { r: r, i: i }; }).filter(function(x) { return x.r._dia === n; });
+      var fecha = filasDia[0].r.fecha;
+      var b = lote.bloqueados[fecha];
+      var card = document.getElementById('dia-' + n);
+      if (b) {
+        rechazados.push(b);
+        if (card) card.dataset.bloqueo = '⚠ No se envió: ' + motivoTexto(b, liderGen) + '.';
+        return;
+      }
+      var todas = filasDia.every(function(x) { return lote.confirmados[x.i]; });
+      var horas = 0; filasDia.forEach(function(x) { horas += parseFloat(x.r.total) || 0; });
+      if (todas) { guardados.push({ fecha: fecha, horas: horas }); if (card) card.remove(); }
+    });
+
+    guardados.sort(function(a, b) { return a.fecha < b.fecha ? -1 : 1; });
+    var multi = diasLote.length > 1;
+    if (getDias().length === 0) limpiarTodo();
+    else { renumerarDias(); revisarAlertas(); }
+
+    // Resumen del envío (cuando hay varios días o algún día rechazado)
+    if (multi || rechazados.length) {
+      var res = document.createElement('div');
+      res.id = 'envio-resumen';
+      var html = '';
+      if (guardados.length) {
+        html += '<div class="res-box res-ok">✓ <strong>' + guardados.length + ' de ' + diasLote.length + (diasLote.length === 1 ? ' día guardado' : ' días guardados') + ' en Google Sheets</strong> — ' +
+          guardados.map(function(g) { return nombreDia(g.fecha).toLowerCase() + ' ' + fechaLegible(g.fecha).substring(0, 5) + ' (' + horasTexto(g.horas) + ')'; }).join(', ') + '.</div>';
+      }
+      rechazados.forEach(function(b) {
+        html += '<div class="res-box res-bad">⚠ <strong>' + nombreDia(b.fecha) + ' ' + fechaLegible(b.fecha) + ' no se envió:</strong> ' + motivoTexto(b, liderGen) +
+          '. Ese día queda en pantalla para que lo revises.' + (b.motivo === 'dia-registrado' ? ' Si necesitas corregir un registro ya enviado, comunícate con Talento Humano.' : '') + '</div>';
+      });
+      res.innerHTML = html;
+      var actionsEl = document.querySelector('.actions');
+      actionsEl.parentNode.insertBefore(res, actionsEl.nextSibling);
+    }
+
+    if (fallidos.length === 0 && rechazados.length === 0) {
+      showToast('✓ ' + enviados + ' de ' + lote.payload.length + ' registros confirmados por Google Sheets');
+    } else if (fallidos.length) {
+      showToast('⚠ ' + enviados + ' confirmados, ' + fallidos.length + ' sin confirmar. Ver detalle abajo.', true);
+      mostrarFilasFallidas(lote.payload, fallidos);
+    } else {
+      showToast(rechazados.length === diasLote.length ? '⚠ No se envió nada. Revisa los avisos.' : '⚠ Algunos días no se enviaron. Revisa los avisos.', true);
+    }
+    mostrarBotonPDF();
   }
 
   var formData = new FormData();
@@ -850,11 +945,22 @@ document.getElementById('fecha').value;
   fetch(SCRIPT_URL, { method: 'POST', body: formData })
     .then(function(response) { return response.json(); })
     .then(function(data) {
-      if (data.result === 'bloqueado') { terminarBloqueado(data); return; }
-      if (data.result === 'ok' && data.guardado === true && Array.isArray(data.ids)) {
-        payload.forEach(function(r, idx) {
-          if (data.ids.indexOf(String(r.id)) > -1) window._lote.confirmados[idx] = true;
+      var lote = window._lote;
+      if (data.result === 'bloqueado') {
+        if (/^codigo-/.test(data.motivo)) { terminarCodigo(data); return; }
+        // Rechazo completo de un envío de una sola fecha (nada se guardó)
+        var fechas = [];
+        lote.payload.forEach(function(r) { if (fechas.indexOf(r.fecha) === -1) fechas.push(r.fecha); });
+        fechas.forEach(function(f) {
+          lote.bloqueados[f] = (!data.fecha || data.fecha === f)
+            ? { fecha: f, motivo: data.motivo, filas: data.filas, horas: data.horas }
+            : { fecha: f, motivo: 'no-enviado' };
         });
+      } else if (data.result === 'ok' && data.guardado === true && Array.isArray(data.ids)) {
+        lote.payload.forEach(function(r, idx) {
+          if (data.ids.indexOf(String(r.id)) > -1) lote.confirmados[idx] = true;
+        });
+        (data.bloqueados || []).forEach(function(b) { lote.bloqueados[b.fecha] = b; });
       }
       terminarEnvio();
     })
@@ -862,19 +968,12 @@ document.getElementById('fecha').value;
 }
 
 function limpiarTodo() {
-  document.getElementById('quincena').value = '';
-  var h = new Date();
-  document.getElementById('fecha').value = h.getFullYear() + '-' + String(h.getMonth()+1).padStart(2,'0') + '-' + String(h.getDate()).padStart(2,'0');
-  if (modoTemporal) document.getElementById('fecha').value = modoTemporal.fecha;
-  document.getElementById('semana').textContent = '—'; updateSemana();
-  document.getElementById('orders-body-desktop').innerHTML = '';
-  document.getElementById('orders-body-mobile').innerHTML = '';
-  rowCount = 0;
-  for (var i = 0; i < 5; i++) addRow();
-  updateValidator();
+  var dias = diaIds();
+  var auxPrev = dias.length ? (document.getElementById('aux-d' + dias[0]).value || '') : '';
+  document.getElementById('dias').innerHTML = '';
+  crearDia(modoTemporal ? modoTemporal.fecha : hoyISO(), auxPrev, 5);
 }
 
-// Init: 5 rows on load
 function getWeekNumber(dateStr) {
   var d = new Date(dateStr + 'T12:00:00');
   var jan1 = new Date(d.getFullYear(), 0, 1);
@@ -893,64 +992,45 @@ function quincenaDeFecha(fechaISO) {
   return mes + '-' + (dia <= 15 ? '1' : '2');
 }
 
-function calcularQuincena() {
-  var sel = document.getElementById('quincena');
-  sel.value = quincenaDeFecha(document.getElementById('fecha').value);
-  var txt = document.getElementById('quincena-texto');
-  if (txt) txt.textContent = sel.selectedIndex > 0 ? sel.options[sel.selectedIndex].text : '—';
-}
-
-function updateSemana() {
-  mostrarFechaTexto();
-  calcularQuincena();
-  var fecha = document.getElementById('fecha').value;
-  var el = document.getElementById('semana');
-  if (!fecha) { el.textContent = '—'; return; }
-  el.textContent = getWeekNumber(fecha);
-}
-
-// ===== Fecha: no se permiten fechas anteriores a hoy, EXCEPTO domingos =====
-// Fechas futuras: permitidas. Domingos (pasados o futuros): siempre permitidos.
+// ===== Fecha: no se permiten fechas anteriores a hoy, EXCEPTO sábados y domingos =====
+// Fechas futuras: permitidas. Sábados y domingos (pasados o futuros): siempre permitidos.
 function hoyISO() {
   var h = new Date();
   return h.getFullYear() + '-' + String(h.getMonth()+1).padStart(2,'0') + '-' + String(h.getDate()).padStart(2,'0');
 }
 
-function esDomingo(fechaISO) {
-  return new Date(fechaISO + 'T12:00:00').getDay() === 0;
+// Fin de semana: sábado (6) o domingo (0)
+function esFinDeSemana(fechaISO) {
+  var d = new Date(fechaISO + 'T12:00:00').getDay();
+  return d === 0 || d === 6;
 }
 
-// true si la fecha se puede usar: hoy, futura o cualquier domingo
+// true si la fecha se puede usar: hoy, futura o cualquier sábado o domingo
 function fechaPermitida(fechaISO) {
   if (!fechaISO) return false;
   if (modoTemporal) return fechaISO === modoTemporal.fecha; // código temporal: solo su fecha
   if (modoAdmin) return true; // el administrador puede usar fechas pasadas
-  return fechaISO >= hoyISO() || esDomingo(fechaISO);
+  return fechaISO >= hoyISO() || esFinDeSemana(fechaISO);
 }
 
 // El calendario es propio (no el del navegador) para poder colorear los días:
-// verde = permitido, rojo = no permitido. El valor se guarda en #fecha como AAAA-MM-DD.
+// verde = permitido, rojo = no permitido. Cada día del formulario tiene su calendario.
 var MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 var _calMes = null; // { y, m } mes que se está mostrando
+var _calDia = null; // día del formulario cuyo calendario está abierto
 
 function isoDe(y, m, d) {
   return y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
 }
 
-function mostrarFechaTexto() {
-  var v = document.getElementById('fecha').value;
-  var t = document.getElementById('fecha-texto');
-  if (!t) return;
-  if (!v) { t.textContent = 'Seleccione fecha'; return; }
-  var p = v.split('-');
-  t.textContent = p[2] + '/' + p[1] + '/' + p[0];
-}
-
-function toggleCalendario() {
+function toggleCalendario(n) {
   if (modoTemporal) { showToast('La fecha está fija: el código temporal es para el ' + fechaLegible(modoTemporal.fecha)); return; }
-  var pop = document.getElementById('cal-pop');
+  var pop = document.getElementById('cal-pop-d' + n);
+  if (!pop) return;
   if (!pop.hidden) { cerrarCalendario(); return; }
-  var v = document.getElementById('fecha').value || hoyISO();
+  cerrarCalendario();
+  _calDia = n;
+  var v = fechaDia(n) || hoyISO();
   var p = v.split('-');
   _calMes = { y: parseInt(p[0]), m: parseInt(p[1]) - 1 };
   renderCalendario();
@@ -958,8 +1038,7 @@ function toggleCalendario() {
 }
 
 function cerrarCalendario() {
-  var pop = document.getElementById('cal-pop');
-  if (pop) pop.hidden = true;
+  document.querySelectorAll('.cal-pop').forEach(function(p) { p.hidden = true; });
 }
 
 function cambiarMes(delta) {
@@ -972,7 +1051,10 @@ function cambiarMes(delta) {
 function renderCalendario() {
   var y = _calMes.y, m = _calMes.m;
   var hoy = hoyISO();
-  var sel = document.getElementById('fecha').value;
+  var sel = fechaDia(_calDia);
+  // Fechas que ya usan los otros días del formulario
+  var otras = {};
+  diaIds().forEach(function(d) { if (d !== _calDia && fechaDia(d)) otras[fechaDia(d)] = true; });
   var diasMes = new Date(y, m + 1, 0).getDate();
   var inicio = (new Date(y, m, 1).getDay() + 6) % 7; // lunes = 0
 
@@ -988,61 +1070,39 @@ function renderCalendario() {
     var cls = 'cal-day ' + (fechaPermitida(iso) ? 'ok' : 'no');
     if (iso === hoy) cls += ' hoy';
     if (iso === sel) cls += ' sel';
-    html += '<button type="button" class="' + cls + '" onclick="seleccionarFecha(\'' + iso + '\')">' + d + '</button>';
+    if (otras[iso]) cls += ' usada';
+    html += '<button type="button" class="' + cls + '" onclick="seleccionarFecha(\'' + iso + '\')"' + (otras[iso] ? ' title="Ya está en otro día"' : '') + '>' + d + '</button>';
   }
   html += '</div><div class="cal-foot">' +
     '<span><i class="cal-sw ok"></i>Permitido</span><span><i class="cal-sw no"></i>No permitido</span>' +
+    (Object.keys(otras).length ? '<span><i class="cal-sw usada"></i>En otro día</span>' : '') +
     '<button type="button" class="cal-hoy" onclick="seleccionarFecha(hoyISO())">Hoy</button></div>';
-  document.getElementById('cal-pop').innerHTML = html;
+  document.getElementById('cal-pop-d' + _calDia).innerHTML = html;
 }
 
 function seleccionarFecha(iso) {
-  var el = document.getElementById('fecha');
+  var n = _calDia;
+  var el = document.getElementById('fecha-d' + n);
+  if (!el) return;
   if (!fechaPermitida(iso)) {
     el.value = hoyISO();
-    showToast('⚠ Solo se permiten fechas de hoy en adelante o días domingo. Se ajustó a hoy.', true);
+    showToast('⚠ Solo se permiten fechas de hoy en adelante o días sábado y domingo. Se ajustó a hoy.', true);
   } else {
     el.value = iso;
   }
-  updateSemana();
+  var card = document.getElementById('dia-' + n);
+  if (card) delete card.dataset.bloqueo; // cambió la fecha: se quita el aviso de rechazo
+  actualizarDia(n);
   cerrarCalendario();
 }
 
 // Cerrar al hacer clic fuera o con Escape
 document.addEventListener('click', function(e) {
   if (!e.target.isConnected) return; // el botón de mes se re-dibujó: no cerrar
-  var picker = document.getElementById('fecha-picker');
-  if (picker && !picker.contains(e.target)) cerrarCalendario();
+  if (!e.target.closest('.fecha-picker')) cerrarCalendario();
 });
 document.addEventListener('keydown', function(e) { if (e.key === 'Escape') cerrarCalendario(); });
 
-
-// Limit factor to aux-general value
-function limitFactor(id) {
-  var auxGen = parseInt(document.getElementById('aux-general').value) || 1;
-  var factorEl = document.getElementById('factor-' + id);
-  if (factorEl) {
-    var val = parseInt(factorEl.value) || 1;
-    if (val > auxGen) {
-      factorEl.value = auxGen;
-      calcRow(id);
-    }
-    if (val < 1) {
-      factorEl.value = 1;
-      calcRow(id);
-    }
-    factorEl.max = auxGen;
-  }
-}
-
-function updateFactorLimits() {
-  var rows = getRows();
-  for (var i = 0; i < rows.length; i++) {
-    var rid = rows[i].id.replace('row-', '');
-    limitFactor(rid);
-  }
-  updateValidator();
-}
 
 // Online/offline banner
 function updateOnlineStatus() {
@@ -1057,21 +1117,21 @@ window.addEventListener('online', updateOnlineStatus);
 window.addEventListener('offline', updateOnlineStatus);
 updateOnlineStatus();
 
-// descargarPlantilla defined at global scope
+// Plantilla de Excel: cada fila trae su Fecha y su N° de auxiliares.
+// No lleva semana ni quincena: el formulario las calcula con la fecha de cada fila.
 function descargarPlantilla() {
   if (typeof XLSX === 'undefined') {
     showToast('⚠ Librería no cargada. Verifica tu conexión a internet.', true);
     return;
   }
   var wb = XLSX.utils.book_new();
-  var headers = [['Enviado', 'Orden (OP)', 'Hora inicio', 'Hora fin', 'Factor', 'Actividad', 'Observaciones']];
+  var headers = [['Enviado', 'Fecha', 'N° Auxiliares', 'Orden (OP)', 'Hora inicio', 'Hora fin', 'Factor', 'Actividad', 'Observaciones']];
   var ws = XLSX.utils.aoa_to_sheet(headers);
   ws['!cols'] = [
-    { wch: 10 }, { wch: 18 }, { wch: 13 }, { wch: 13 },
+    { wch: 10 }, { wch: 13 }, { wch: 14 }, { wch: 18 }, { wch: 13 }, { wch: 13 },
     { wch: 10 }, { wch: 35 }, { wch: 30 }
   ];
-  // Add example row in gray
-  XLSX.utils.sheet_add_aoa(ws, [['', 'OP-001', '07:00', '14:00', '1', 'Ejemplo de actividad', 'Opcional']], { origin: 'A2' });
+  XLSX.utils.sheet_add_aoa(ws, [['', fechaLegible(hoyISO()), 1, 'OP-001', '07:00', '14:00', '1', 'Ejemplo de actividad', 'Opcional']], { origin: 'A2' });
   XLSX.utils.book_append_sheet(wb, ws, 'Registro');
   XLSX.writeFile(wb, 'Plantilla_ManoDeObra.xlsx');
   showToast('✓ Plantilla descargada correctamente');
@@ -1119,23 +1179,59 @@ function excelTimeToHHMM(val) {
   return str;
 }
 
+// Fecha de Excel → AAAA-MM-DD. Acepta fecha de Excel (número de serie),
+// texto dd/mm/aaaa, dd-mm-aaaa, dd.mm.aaaa o aaaa-mm-dd. Devuelve '' si está vacía y null si no se entiende.
+function excelFechaISO(raw, txt) {
+  if (raw === '' || raw === null || raw === undefined) return '';
+  if (typeof raw === 'number' && raw > 20000 && raw < 80000) {
+    var dc = XLSX.SSF.parse_date_code(raw);
+    if (dc) return isoDe(dc.y, dc.m - 1, dc.d);
+  }
+  var s = String(txt || raw).trim();
+  var m1 = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/);
+  if (m1) {
+    var y = parseInt(m1[3], 10); if (y < 100) y += 2000;
+    var mo = parseInt(m1[2], 10), d = parseInt(m1[1], 10);
+    if (mo >= 1 && mo <= 12 && d >= 1 && d <= 31) return isoDe(y, mo - 1, d);
+    return null;
+  }
+  var m2 = s.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/);
+  if (m2) return isoDe(parseInt(m2[1], 10), parseInt(m2[2], 10) - 1, parseInt(m2[3], 10));
+  return null;
+}
+
+function llenarFila(id, f) {
+  var set = function(pref, v) { var el = document.getElementById(pref + id); if (el) el.value = v; };
+  set('op-', f.orden);
+  set('ini-', excelTimeToHHMM(f.ini));
+  set('fin-', excelTimeToHHMM(f.fin));
+  set('factor-', f.factor || '1');
+  set('act-', f.act);
+  set('obs-', f.obs);
+  calcRow(id);
+}
+
 function cargarDesdeExcel(event) {
   var file = event.target.files[0];
   if (!file) return;
   var reader = new FileReader();
   reader.onload = function(e) {
+    var input = document.getElementById('file-input');
     try {
       var wb = XLSX.read(e.target.result, { type: 'binary', cellText: true, cellDates: false });
       var ws = wb.Sheets[wb.SheetNames[0]];
       var data = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: '' });
-      if (data.length < 2) { showToast('⚠ El archivo no tiene datos', true); return; }
+      var dataRaw = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: '' });
+      if (data.length < 2) { showToast('⚠ El archivo no tiene datos', true); input.value = ''; return; }
 
-      // Find header row
+      // Encabezados
       var headerRow = data[0];
-      var colEnviado = -1, colOrden = -1, colIni = -1, colFin = -1, colFactor = -1, colAct = -1, colObs = -1;
+      var colEnviado = -1, colFecha = -1, colAux = -1, colOrden = -1, colIni = -1, colFin = -1, colFactor = -1, colAct = -1, colObs = -1;
       headerRow.forEach(function(h, i) {
         var h2 = String(h).toLowerCase().trim();
         if (h2 === 'enviado') colEnviado = i;
+        else if (h2.indexOf('fecha') === 0) colFecha = i;
+        else if (h2.indexOf('auxiliar') > -1) colAux = i;
         else if (h2.indexOf('orden') > -1 || h2 === 'op') colOrden = i;
         else if (h2.indexOf('inicio') > -1 || h2 === 'hora inicio') colIni = i;
         else if (h2.indexOf('fin') > -1 || h2 === 'hora fin') colFin = i;
@@ -1145,64 +1241,105 @@ function cargarDesdeExcel(event) {
       });
 
       if (colOrden === -1 || colIni === -1 || colFin === -1 || colAct === -1) {
-        showToast('⚠ El archivo no tiene el formato correcto', true); return;
+        showToast('⚠ El archivo no tiene el formato correcto', true); input.value = ''; return;
       }
 
-      // Filter rows without X in Enviado column
+      // Filas sin X en "Enviado"
+      var dias0 = diaIds();
+      var fechaForm = dias0.length ? fechaDia(dias0[0]) : hoyISO();
+      var auxForm = dias0.length ? (document.getElementById('aux-d' + dias0[0]).value || '') : '';
       var filas = [];
+      var ultFecha = '', ultAux = '';
       for (var i = 1; i < data.length; i++) {
-        var row = data[i];
-        if (!row || row.every(function(c) { return !c; })) continue;
+        var row = data[i], raw = dataRaw[i] || [];
+        if (!row || row.every(function(c) { return !String(c).trim(); })) continue;
         var enviado = colEnviado > -1 ? String(row[colEnviado]).trim().toLowerCase() : '';
-        if (enviado === 'x' || enviado === 'X') continue;
-        filas.push({
-          orden: colOrden > -1 ? String(row[colOrden]).trim() : '',
-          ini: colIni > -1 ? String(row[colIni]).trim() : '',
-          fin: colFin > -1 ? String(row[colFin]).trim() : '',
+        if (enviado === 'x') continue;
+        var f = {
+          orden: String(row[colOrden]).trim(),
+          ini: String(row[colIni]).trim(),
+          fin: String(row[colFin]).trim(),
           factor: colFactor > -1 ? String(row[colFactor]).trim() : '1',
-          act: colAct > -1 ? String(row[colAct]).trim() : '',
+          act: String(row[colAct]).trim(),
           obs: colObs > -1 ? String(row[colObs]).trim() : ''
-        });
+        };
+        if (colFecha > -1) {
+          var iso = excelFechaISO(raw[colFecha], row[colFecha]);
+          if (iso === null) {
+            showToast('⚠ Fila ' + (i + 1) + ' del Excel: la fecha "' + row[colFecha] + '" no se entiende. Usa el formato dd/mm/aaaa.', true);
+            input.value = ''; return;
+          }
+          // Si la celda está vacía, toma la fecha de la fila anterior
+          f.fecha = iso || ultFecha || fechaForm;
+          ultFecha = f.fecha;
+          var a = colAux > -1 ? String(row[colAux]).trim() : '';
+          f.aux = a || ultAux || auxForm;
+          ultAux = f.aux;
+        }
+        filas.push(f);
       }
 
       if (filas.length === 0) {
         showToast('⚠ No hay filas nuevas para cargar (todas marcadas con X)', true);
-        document.getElementById('file-input').value = '';
+        input.value = '';
         return;
       }
 
-      // Clear current rows and load new ones
-      document.getElementById('orders-body-desktop').innerHTML = '';
-      document.getElementById('orders-body-mobile').innerHTML = '';
-      rowCount = 0;
+      ['envio-resumen'].forEach(function(pid) { var el = document.getElementById(pid); if (el) el.remove(); });
 
+      if (colFecha === -1) {
+        // Plantilla anterior (sin columna Fecha): todo va a un solo día con la fecha y los auxiliares del formulario
+        document.getElementById('dias').innerHTML = '';
+        var n0 = crearDia(fechaForm || hoyISO(), auxForm, 0);
+        filas.forEach(function(f) { llenarFila(addRow(n0), f); });
+        updateValidator(n0);
+        showToast('✓ ' + filas.length + ' fila(s) cargadas desde Excel (plantilla anterior: un solo día)');
+        input.value = '';
+        return;
+      }
+
+      // Plantilla nueva: un día por cada fecha, ordenados
+      var grupos = {}, orden = [];
       filas.forEach(function(f) {
-        addRow();
-        var id = rowCount;
-        var opEl = document.getElementById('op-' + id);
-        var iniEl = document.getElementById('ini-' + id);
-        var finEl = document.getElementById('fin-' + id);
-        var factorEl = document.getElementById('factor-' + id);
-        var actEl = document.getElementById('act-' + id);
-        var obsEl = document.getElementById('obs-' + id);
-        if (opEl) opEl.value = f.orden;
-        if (iniEl) iniEl.value = excelTimeToHHMM(f.ini);
-        if (finEl) finEl.value = excelTimeToHHMM(f.fin);
-        if (factorEl) factorEl.value = f.factor || '1';
-        if (actEl) actEl.value = f.act;
-        if (obsEl) obsEl.value = f.obs;
-        calcRow(id);
+        if (!grupos[f.fecha]) { grupos[f.fecha] = []; orden.push(f.fecha); }
+        grupos[f.fecha].push(f);
       });
+      orden.sort();
 
-      updateValidator();
-      showToast('✓ ' + filas.length + ' fila(s) cargadas desde Excel');
-      document.getElementById('file-input').value = '';
+      if (modoTemporal && (orden.length > 1 || orden[0] !== modoTemporal.fecha)) {
+        showToast('⚠ El código temporal solo sirve para el ' + fechaLegible(modoTemporal.fecha) + '. El Excel trae otras fechas.', true);
+        input.value = ''; return;
+      }
+
+      var auxDistintos = [];
+      document.getElementById('dias').innerHTML = '';
+      orden.forEach(function(fecha) {
+        var g = grupos[fecha];
+        var aux = g[0].aux;
+        if (g.some(function(f) { return f.aux !== aux; })) auxDistintos.push(fechaLegible(fecha));
+        var n = crearDia(fecha, aux, 0);
+        g.forEach(function(f) { llenarFila(addRow(n), f); });
+        updateValidator(n);
+      });
+      revisarAlertas();
+
+      var noPermitidas = orden.filter(function(f) { return !fechaPermitida(f); });
+      if (noPermitidas.length) {
+        showToast('⚠ Cargadas ' + filas.length + ' filas en ' + orden.length + ' días. Revisa: ' + noPermitidas.map(fechaLegible).join(', ') + ' no está(n) permitida(s).', true);
+      } else if (auxDistintos.length) {
+        showToast('⚠ El N° de auxiliares cambia dentro del ' + auxDistintos.join(', ') + '. Se usó el de la primera fila; revísalo.', true);
+      } else {
+        showToast('✓ ' + filas.length + ' fila(s) cargadas en ' + orden.length + (orden.length === 1 ? ' día' : ' días'));
+      }
+      input.value = '';
     } catch(err) {
       showToast('⚠ Error al leer el archivo: ' + err.message, true);
+      input.value = '';
     }
   };
   reader.readAsBinaryString(file);
 }
+
 
 // ===== Panel de filas sin confirmar =====
 // Flujo: 1) Consultar si llegó  →  si llegó: verde, sin más acciones
@@ -1358,13 +1495,24 @@ function reenviarFila(filaNum) {
 }
 
 function marcarConfirmada(filaNum) {
-  if (!window._lote) return;
-  window._lote.confirmados[filaNum - 1] = true;
+  var lote = window._lote;
+  if (!lote) return;
+  lote.confirmados[filaNum - 1] = true;
   mostrarBotonPDF();
-  var todas = window._lote.confirmados.every(function(c) { return c; });
-  if (todas) {
-    showToast('✓ Las ' + window._lote.payload.length + ' filas están confirmadas en Google Sheets');
-    limpiarTodo();
+  // Si ya están confirmadas todas las filas de ese día, el día se quita del formulario
+  var dia = lote.payload[filaNum - 1]._dia;
+  var todasDia = lote.payload.every(function(r, i) { return r._dia !== dia || lote.confirmados[i]; });
+  if (todasDia) {
+    var card = document.getElementById('dia-' + dia);
+    if (card) {
+      card.remove();
+      if (getDias().length === 0) limpiarTodo(); else { renumerarDias(); revisarAlertas(); }
+    }
+  }
+  var resueltas = lote.payload.every(function(r, i) { return lote.confirmados[i] || lote.bloqueados[r.fecha]; });
+  if (resueltas) {
+    var n = lote.confirmados.filter(function(c) { return c; }).length;
+    showToast('✓ Las ' + n + ' filas enviadas están confirmadas en Google Sheets');
   }
 }
 
@@ -1373,45 +1521,25 @@ function mostrarBotonPDF() {
   var hayConfirmadas = window._lote.confirmados.some(function(c) { return c; });
   var existing = document.getElementById('pdf-btn-wrap');
   if (existing) existing.remove();
+  if (!hayConfirmadas) return;
   var wrap = document.createElement('div');
   wrap.id = 'pdf-btn-wrap';
   wrap.style.cssText = 'margin-top:16px;text-align:center;';
-  wrap.innerHTML = '<button onclick="generarPDF()" style="background:#1A5C3A;color:#fff;border:none;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;font-family:DM Sans,sans-serif;display:inline-flex;align-items:center;gap:8px;"><svg fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\" stroke-width=\"2\" width=\"16\" height=\"16\"><path d=\"M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z\"/><polyline points=\"14 2 14 8 20 8\"/><line x1=\"16\" y1=\"13\" x2=\"8\" y2=\"13\"/><line x1=\"16\" y1=\"17\" x2=\"8\" y2=\"17\"/></svg>Descargar comprobante PDF</button>';
-  if (!hayConfirmadas) return;
+  wrap.innerHTML = '<button onclick="generarPDF()" style="background:#1A5C3A;color:#fff;border:none;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;font-family:DM Sans,sans-serif;display:inline-flex;align-items:center;gap:8px;"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Descargar comprobante PDF</button>';
   var actionsEl = document.querySelector('.actions');
   actionsEl.parentNode.insertBefore(wrap, actionsEl.nextSibling);
 }
 
-function generarPDF() {
-  var lote = window._lote;
-  if (!lote) return;
-  var registros = [];
-  var pendientes = [];
-  lote.payload.forEach(function(r, idx) {
-    if (lote.confirmados[idx]) registros.push({ fila: idx + 1, r: r });
-    else pendientes.push(idx + 1);
-  });
-  if (registros.length === 0) return;
-  var filasOriginales = registros.map(function(x) { return x.fila; });
-  registros = registros.map(function(x) { return x.r; });
+// Chulito dibujado (la fuente del PDF no tiene el símbolo ✓)
+function pdfChulito(doc, x, y) {
+  doc.setDrawColor(26, 92, 58);
+  doc.setLineWidth(0.5);
+  doc.line(x, y + 1.4, x + 1.2, y + 2.6);
+  doc.line(x + 1.2, y + 2.6, x + 3.4, y);
+  doc.setLineWidth(0.2);
+}
 
-  var r0 = registros[0];
-  var totalGeneral = 0;
-  registros.forEach(function(r) { totalGeneral += parseFloat(r.total) || 0; });
-  totalGeneral = parseFloat(totalGeneral.toFixed(2));
-
-  // Apply auto-adjustment display (round to expected if within 0.1h)
-  var auxVal = parseInt(r0.auxiliares) || 0;
-  var expected = auxVal * 7;
-  var diff = parseFloat((totalGeneral - expected).toFixed(2));
-  var displayTotal = (Math.abs(diff) < 0.1 && expected > 0) ? expected : totalGeneral;
-
-  var doc = new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  var pageW = 210;
-  var margin = 14;
-  var usable = pageW - margin * 2;
-
-  // Header
+function pdfEncabezado(doc, pageW, margin) {
   doc.setFillColor(26, 92, 58);
   doc.rect(0, 0, pageW, 26, 'F');
   doc.setTextColor(255, 255, 255);
@@ -1423,97 +1551,178 @@ function generarPDF() {
   doc.text('Scientia Colombia SAS', margin, 18);
   doc.setFontSize(8);
   doc.text('Generado: ' + new Date().toLocaleString('es-CO'), pageW - margin, 18, { align: 'right' });
+}
 
-  // Info boxes - 2 rows of 3
-  var boxY = 32;
-  var boxH = 14;
-  var boxW = (usable - 8) / 3;
-  var boxes = [
-    { label: 'QUINCENA', value: r0.quincena },
-    { label: 'FECHA', value: r0.fecha },
-    { label: 'SEMANA', value: String(r0.semana) },
-    { label: 'N° AUXILIARES', value: String(r0.auxiliares) },
-    { label: 'LÍDER ENCARGADO', value: r0.lider },
-    { label: 'TOTAL HORAS DÍA', value: displayTotal + 'h' }
-  ];
-
+function pdfCajas(doc, boxes, cols, y, margin, usable, verdeIdx) {
+  var boxH = 14, gap = 4;
+  var boxW = (usable - gap * (cols - 1)) / cols;
   boxes.forEach(function(b, i) {
-    var col = i % 3;
-    var row = Math.floor(i / 3);
-    var x = margin + col * (boxW + 4);
-    var y = boxY + row * (boxH + 4);
+    var x = margin + (i % cols) * (boxW + gap);
+    var yy = y + Math.floor(i / cols) * (boxH + gap);
     doc.setFillColor(245, 244, 240);
     doc.setDrawColor(226, 223, 216);
-    doc.roundedRect(x, y, boxW, boxH, 2, 2, 'FD');
+    doc.roundedRect(x, yy, boxW, boxH, 2, 2, 'FD');
     doc.setTextColor(160, 157, 150);
     doc.setFontSize(6.5);
     doc.setFont('helvetica', 'bold');
-    doc.text(b.label, x + 3, y + 5);
-    // Color total horas green
-    if (i === 5) {
-      doc.setTextColor(26, 92, 58);
-    } else {
-      doc.setTextColor(28, 27, 24);
-    }
+    doc.text(b.label, x + 3, yy + 5);
+    if (i === verdeIdx) doc.setTextColor(26, 92, 58); else doc.setTextColor(28, 27, 24);
     doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    var val = b.value;
-    if (val.length > 18) val = val.substring(0, 17) + '…';
-    doc.text(val, x + 3, y + 12);
+    var val = String(b.value);
+    if (val.length > 24) val = val.substring(0, 23) + '…';
+    doc.text(val, x + 3, yy + 12);
   });
+  return y + Math.ceil(boxes.length / cols) * (boxH + gap);
+}
 
-  // Table
-  var tableRows = registros.map(function(r, i) {
-    return [filasOriginales[i], r.orden, r.h_ini, r.h_fin, r.total + 'h', r.actividad, r.obs || '—'];
+var PDF_TABLA = {
+  styles: { fontSize: 8.5, cellPadding: { top: 3, bottom: 3, left: 3, right: 3 }, valign: 'middle' },
+  headStyles: { fillColor: [26, 92, 58], textColor: 255, fontStyle: 'bold', fontSize: 8, halign: 'center' },
+  alternateRowStyles: { fillColor: [248, 247, 244] },
+  columnStyles: {
+    0: { cellWidth: 8, halign: 'center' },
+    1: { cellWidth: 28, halign: 'left' },
+    2: { cellWidth: 18, halign: 'center' },
+    3: { cellWidth: 18, halign: 'center' },
+    4: { cellWidth: 16, halign: 'center', fontStyle: 'bold', textColor: [26, 92, 58] },
+    5: { cellWidth: 60, halign: 'left' },
+    6: { cellWidth: 34, halign: 'left' }
+  }
+};
+
+function totalMostrado(filas, aux) {
+  var t = 0;
+  filas.forEach(function(r) { t += parseFloat(r.total) || 0; });
+  t = parseFloat(t.toFixed(2));
+  var esp = (parseInt(aux) || 0) * 7;
+  return (Math.abs(t - esp) < 0.1 && esp > 0) ? esp : t;
+}
+
+function generarPDF() {
+  var lote = window._lote;
+  if (!lote) return;
+
+  // Fechas del envío (en orden) y filas confirmadas de cada una
+  var fechas = [];
+  lote.payload.forEach(function(r) { if (fechas.indexOf(r.fecha) === -1) fechas.push(r.fecha); });
+  fechas.sort();
+  var porFecha = {};
+  var pendientes = [];
+  fechas.forEach(function(f) { porFecha[f] = { conf: [], num: [], todas: 0 }; });
+  lote.payload.forEach(function(r, idx) {
+    var g = porFecha[r.fecha];
+    g.todas++;
+    if (lote.confirmados[idx]) { g.conf.push(r); g.num.push(g.todas); }
+    else if (!lote.bloqueados[r.fecha]) pendientes.push({ fecha: r.fecha, n: g.todas });
   });
+  var totalConf = 0;
+  fechas.forEach(function(f) { totalConf += porFecha[f].conf.length; });
+  if (totalConf === 0) return;
 
-  doc.autoTable({
-    startY: boxY + 2 * (boxH + 4) + 4,
-    head: [['#', 'Orden (OP)', 'Inicio', 'Fin', 'Horas', 'Actividad', 'Obs.']],
-    body: tableRows,
-    styles: { fontSize: 8.5, cellPadding: { top: 3, bottom: 3, left: 3, right: 3 }, valign: 'middle' },
-    headStyles: { fillColor: [26, 92, 58], textColor: 255, fontStyle: 'bold', fontSize: 8, halign: 'center' },
-    alternateRowStyles: { fillColor: [248, 247, 244] },
-    columnStyles: {
-      0: { cellWidth: 8, halign: 'center' },
-      1: { cellWidth: 28, halign: 'left' },
-      2: { cellWidth: 18, halign: 'center' },
-      3: { cellWidth: 18, halign: 'center' },
-      4: { cellWidth: 16, halign: 'center', fontStyle: 'bold', textColor: [26, 92, 58] },
-      5: { cellWidth: 60, halign: 'left' },
-      6: { cellWidth: 34, halign: 'left' }
-    },
-    margin: { left: margin, right: margin },
-    tableWidth: usable
-  });
+  var doc = new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  var pageW = 210, pageH = 297, margin = 14, usable = pageW - margin * 2;
+  pdfEncabezado(doc, pageW, margin);
+  var lider = lote.payload[0].lider;
+  var y;
 
-  // Footer
-  var finalY = doc.lastAutoTable.finalY + 5;
-  doc.setFillColor(232, 242, 237);
-  doc.setDrawColor(184, 217, 198);
-  doc.roundedRect(margin, finalY, usable, 9, 2, 2, 'FD');
-  // Chulito dibujado (la fuente del PDF no tiene el símbolo ✓)
-  doc.setDrawColor(26, 92, 58);
-  doc.setLineWidth(0.5);
-  doc.line(margin + 3, finalY + 4.6, margin + 4.2, finalY + 5.8);
-  doc.line(margin + 4.2, finalY + 5.8, margin + 6.4, finalY + 3.2);
-  doc.setLineWidth(0.2);
-  doc.setTextColor(26, 92, 58);
-  doc.setFontSize(7.5);
-  doc.setFont('helvetica', 'normal');
-  doc.text(registros.length + ' de ' + lote.payload.length + ' registros confirmados por Google Sheets — ' + new Date().toLocaleString('es-CO'), margin + 8, finalY + 6);
+  if (fechas.length === 1) {
+    // ----- Un solo día: el mismo comprobante de siempre -----
+    var f0 = fechas[0], g0 = porFecha[f0], r0 = g0.conf[0];
+    y = pdfCajas(doc, [
+      { label: 'QUINCENA', value: r0.quincena },
+      { label: 'FECHA', value: r0.fecha },
+      { label: 'SEMANA', value: String(r0.semana) },
+      { label: 'N° AUXILIARES', value: String(r0.auxiliares) },
+      { label: 'LÍDER ENCARGADO', value: r0.lider },
+      { label: 'TOTAL HORAS DÍA', value: totalMostrado(g0.conf, r0.auxiliares) + 'h' }
+    ], 3, 32, margin, usable, 5);
+    doc.autoTable(Object.assign({
+      startY: y,
+      head: [['#', 'Orden (OP)', 'Inicio', 'Fin', 'Horas', 'Actividad', 'Obs.']],
+      body: g0.conf.map(function(r, i) { return [g0.num[i], r.orden, r.h_ini, r.h_fin, r.total + 'h', r.actividad, r.obs || '—']; }),
+      margin: { left: margin, right: margin }, tableWidth: usable
+    }, PDF_TABLA));
+    y = doc.lastAutoTable.finalY + 5;
+  } else {
+    // ----- Varios días: resumen arriba y una sección por día -----
+    var diasOk = fechas.filter(function(f) { return porFecha[f].conf.length > 0; });
+    var horasTot = 0;
+    diasOk.forEach(function(f) { horasTot += totalMostrado(porFecha[f].conf, porFecha[f].conf[0].auxiliares); });
+    y = pdfCajas(doc, [
+      { label: 'LÍDER ENCARGADO', value: lider },
+      { label: 'FECHAS', value: fechaLegible(fechas[0]).substring(0, 5) + ' al ' + fechaLegible(fechas[fechas.length - 1]) },
+      { label: 'DÍAS GUARDADOS', value: diasOk.length + ' de ' + fechas.length },
+      { label: 'TOTAL HORAS GUARDADAS', value: parseFloat(horasTot.toFixed(2)) + 'h' }
+    ], 4, 32, margin, usable, 3);
 
-  if (pendientes.length > 0) {
-    var warnY = finalY + 12;
-    doc.setFillColor(253, 240, 238);
-    doc.setDrawColor(239, 154, 154);
-    doc.roundedRect(margin, warnY, usable, 9, 2, 2, 'FD');
-    doc.setTextColor(192, 57, 43);
-    doc.setFont('helvetica', 'bold');
-    doc.text('ATENCIÓN: fila(s) ' + pendientes.join(', ') + ' sin confirmar en Google Sheets. Este comprobante está incompleto.', margin + 3, warnY + 6);
+    fechas.forEach(function(f) {
+      var g = porFecha[f];
+      var b = lote.bloqueados[f];
+      if (y > pageH - 40) { doc.addPage(); y = 16; }
+      var titulo = nombreDia(f) + ' ' + fechaLegible(f);
+      if (b || g.conf.length === 0) {
+        // Día no enviado
+        doc.setFillColor(253, 240, 238); doc.setDrawColor(239, 154, 154);
+        doc.roundedRect(margin, y, usable, 9, 1.5, 1.5, 'FD');
+        doc.setTextColor(192, 57, 43); doc.setFontSize(9); doc.setFont('helvetica', 'bold');
+        doc.text(titulo + ' — NO ENVIADO', margin + 3, y + 6);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5);
+        var mot = b ? (b.motivo === 'dia-registrado' ? 'Ya existía un registro de este líder para esta fecha'
+                     : b.motivo === 'fecha-no-permitida' ? 'Fecha no permitida' : 'No se guardó') : 'Sin confirmar';
+        doc.text(mot, pageW - margin - 3, y + 6, { align: 'right' });
+        y += 13;
+        return;
+      }
+      var r0 = g.conf[0];
+      doc.setFillColor(232, 242, 237); doc.setDrawColor(184, 217, 198);
+      doc.roundedRect(margin, y, usable, 9, 1.5, 1.5, 'FD');
+      doc.setTextColor(28, 27, 24); doc.setFontSize(9); doc.setFont('helvetica', 'bold');
+      doc.text(titulo, margin + 3, y + 6);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(74, 107, 88);
+      doc.text('Quincena ' + r0.quincena + ' · Semana ' + r0.semana + ' · ' + r0.auxiliares + (String(r0.auxiliares) === '1' ? ' auxiliar' : ' auxiliares') +
+        ' · ' + totalMostrado(g.conf, r0.auxiliares) + 'h', pageW - margin - 3, y + 6, { align: 'right' });
+      doc.autoTable(Object.assign({
+        startY: y + 9,
+        head: [['#', 'Orden (OP)', 'Inicio', 'Fin', 'Horas', 'Actividad', 'Obs.']],
+        body: g.conf.map(function(r, i) { return [g.num[i], r.orden, r.h_ini, r.h_fin, r.total + 'h', r.actividad, r.obs || '—']; }),
+        margin: { left: margin, right: margin }, tableWidth: usable
+      }, PDF_TABLA));
+      y = doc.lastAutoTable.finalY + 5;
+    });
   }
 
-  doc.save('Comprobante_ManoDeObra_' + r0.fecha + '.pdf');
+  // Pie
+  if (y > pageH - 30) { doc.addPage(); y = 16; }
+  doc.setFillColor(232, 242, 237); doc.setDrawColor(184, 217, 198);
+  doc.roundedRect(margin, y, usable, 9, 2, 2, 'FD');
+  pdfChulito(doc, margin + 3, y + 3.2);
+  doc.setTextColor(26, 92, 58); doc.setFontSize(7.5); doc.setFont('helvetica', 'normal');
+  doc.text(totalConf + ' de ' + lote.payload.length + ' registros confirmados por Google Sheets — ' + new Date().toLocaleString('es-CO'), margin + 8, y + 6);
+  y += 12;
+
+  var avisos = [];
+  if (pendientes.length) {
+    avisos.push('ATENCIÓN: ' + (fechas.length === 1
+      ? 'fila(s) ' + pendientes.map(function(p) { return p.n; }).join(', ')
+      : pendientes.map(function(p) { return fechaLegible(p.fecha).substring(0, 5) + ' fila ' + p.n; }).join(', ')) +
+      ' sin confirmar en Google Sheets. Este comprobante está incompleto.');
+  }
+  var noEnv = fechas.filter(function(f) { return lote.bloqueados[f]; });
+  if (noEnv.length) {
+    avisos.push('ATENCIÓN: ' + noEnv.length + (noEnv.length === 1 ? ' día no se envió (' : ' días no se enviaron (') +
+      noEnv.map(fechaLegible).join(', ') + '). Este comprobante no ' + (noEnv.length === 1 ? 'lo' : 'los') + ' incluye.');
+  }
+  avisos.forEach(function(t) {
+    if (y > pageH - 14) { doc.addPage(); y = 16; }
+    doc.setFillColor(253, 240, 238); doc.setDrawColor(239, 154, 154);
+    doc.roundedRect(margin, y, usable, 9, 2, 2, 'FD');
+    doc.setTextColor(192, 57, 43); doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5);
+    doc.text(t, margin + 3, y + 6);
+    y += 12;
+  });
+
+  var nombre = fechas.length === 1 ? fechas[0] : fechas[0] + '_al_' + fechas[fechas.length - 1];
+  doc.save('Comprobante_ManoDeObra_' + nombre + '.pdf');
 }
 
 
@@ -1526,7 +1735,6 @@ var modoTemporal = null;   // { codigo, lider, fecha, exp, vence } cuando se ent
 var claveAdmin = '';       // lo que viaja con cada envío (contraseña o CODIGO|SESION)
 var _timerCodigo = null;
 
-function fechaLegible(iso) { var p = iso.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
 
 function abrirAccesoAdmin() {
   if (modoAdmin) { salirModoAdmin(); return; }
@@ -1581,15 +1789,19 @@ function activarModoAdmin() {
   document.getElementById('admin-banner').hidden = false;
   document.getElementById('admin-acceso-txt').textContent = 'Salir de modo administrador';
   document.getElementById('gen-panel').hidden = false;
+  revisarAlertas();
   showToast('🔓 Modo administrador activo — se permiten fechas pasadas');
 }
 
 function activarModoTemporal(d) {
   modoAdmin = true;
   modoTemporal = { codigo: d.codigo, lider: d.lider, fecha: d.fecha, exp: d.exp, vence: d.vence };
-  // Fecha y líder quedan fijos: el código solo sirve para ellos
-  document.getElementById('fecha').value = d.fecha;
-  updateSemana();
+  // Fecha y líder quedan fijos: el código solo sirve para ellos (un solo día)
+  var ids = diaIds();
+  ids.slice(1).forEach(function(n) { var c = document.getElementById('dia-' + n); if (c) c.remove(); });
+  document.getElementById('fecha-d' + ids[0]).value = d.fecha;
+  actualizarDia(ids[0]);
+  renumerarDias();
   var lid = document.getElementById('lider-general');
   lid.value = d.lider;
   lid.disabled = true;
@@ -1622,8 +1834,13 @@ function terminarModo() {
   var lid = document.getElementById('lider-general');
   lid.disabled = false;
   if (eraTemporal) lid.value = '';
-  var f = document.getElementById('fecha');
-  if (f.value && !fechaPermitida(f.value)) { f.value = hoyISO(); updateSemana(); }
+  // Días con fechas que un líder no puede usar: vuelven a hoy
+  diaIds().forEach(function(n) {
+    var f = document.getElementById('fecha-d' + n);
+    if (f.value && !fechaPermitida(f.value)) { f.value = hoyISO(); actualizarDia(n); }
+  });
+  renumerarDias();
+  revisarAlertas();
   cerrarCalendario();
 }
 
@@ -1692,11 +1909,8 @@ function copiarMensaje() {
 // Page init
 (function(){
   document.getElementById('gen-lider').innerHTML = liderOptions('');
-  var h = new Date();
-  document.getElementById('fecha').value = h.getFullYear()+'-'+String(h.getMonth()+1).padStart(2,'0')+'-'+String(h.getDate()).padStart(2,'0');
-  updateSemana();
   rowCount = 0;
-  for (var i = 0; i < 5; i++) addRow();
+  crearDia(hoyISO(), '', 5);
 })();
 </script>
 </body>
