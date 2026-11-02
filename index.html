@@ -216,12 +216,12 @@
   .gen-codigo { font-family: 'DM Mono', monospace; font-size: 30px; font-weight: 500; letter-spacing: 0.12em; color: var(--accent); }
   select:disabled { background: var(--surface2); color: var(--text); opacity: 1; cursor: not-allowed; }
   /* VARIOS DÍAS */
-  .lider-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 14px; }
+  .lider-grid { display: grid; grid-template-columns: 1.3fr 0.8fr 1.5fr; gap: 14px; align-items: start; }
   .dia-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 1rem; }
   .dia-card.con-alerta { border-color: #EF9A9A; }
-  .dia-head { display: grid; grid-template-columns: 30px 1.15fr 1.45fr 0.75fr 0.8fr 1.5fr 32px; gap: 14px; align-items: end;
+  .dia-head { display: grid; grid-template-columns: 30px 1.15fr 1.5fr 0.75fr 1.6fr 32px; gap: 14px; align-items: end;
     padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); position: relative; }
-  #dias.solo .dia-head { grid-template-columns: 1.15fr 1.45fr 0.75fr 0.8fr 1.5fr; }
+  #dias.solo .dia-head { grid-template-columns: 1.15fr 1.5fr 0.75fr 1.6fr; }
   #dias.solo .dia-num, #dias.solo .dia-del { display: none; }
   .dia-num { width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 600; font-size: 13px;
     display: flex; align-items: center; justify-content: center; margin-bottom: 5px; }
@@ -332,6 +332,14 @@
         </select>
       </div>
       <div class="field">
+        <label for="aux-general">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          N° Auxiliares <span class="required-star">*</span>
+        </label>
+        <input type="number" id="aux-general" min="1" max="999" placeholder="0" oninput="updateFactorLimits()">
+        <span style="font-size:11.5px; color:var(--text3);">Aplica para todos los días</span>
+      </div>
+      <div class="field">
         <label>
           <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           Resumen
@@ -425,7 +433,8 @@ function liderOptions(selectedVal) {
 
 // ===== VARIOS DÍAS =====
 // El formulario tiene un líder (arriba) y uno o más "días". Cada día tiene su propia fecha,
-// N° de auxiliares y órdenes; la quincena y la semana se calculan con la fecha de ESE día.
+// órdenes; la quincena y la semana se calculan con la fecha de ESE día.
+// El N° de auxiliares es uno solo (arriba, junto al líder) y aplica para todos los días.
 var diaCount = 0;
 var ICON_TRASH = '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>';
 var ICON_CAL = '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
@@ -437,7 +446,7 @@ var DIAS_SEMANA = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','S
 function getDias() { return Array.prototype.slice.call(document.querySelectorAll('#dias .dia-card')); }
 function diaIds() { return getDias().map(function(el) { return parseInt(el.getAttribute('data-dia'), 10); }); }
 function fechaDia(n) { var el = document.getElementById('fecha-d' + n); return el ? el.value : ''; }
-function auxDia(n) { var el = document.getElementById('aux-d' + n); return el ? (parseInt(el.value, 10) || 0) : 0; }
+function auxDia(n) { var el = document.getElementById('aux-general'); return el ? (parseInt(el.value, 10) || 0) : 0; }
 function diaDeFila(id) {
   var r = document.getElementById('row-' + id);
   var c = r ? r.closest('.dia-card') : null;
@@ -474,10 +483,8 @@ function crearDia(fechaISO, aux, filasIniciales) {
         '</div></div>' +
       '<div class="field"><label>' + ICON_CAL + ' Quincena</label><div class="quincena-texto" id="quincena-texto-d' + n + '">—</div></div>' +
       '<div class="field"><label>' + ICON_CAL + ' Semana del año</label><div class="quincena-texto"><span style="font-size:13px; color:var(--text2); font-weight:400">Semana</span> <span id="semana-d' + n + '">—</span></div></div>' +
-      '<div class="field"><label>' + ICON_AUX + ' N° Auxiliares <span class="required-star">*</span></label>' +
-        '<input type="number" id="aux-d' + n + '" min="1" max="999" placeholder="0" oninput="updateValidator(' + n + '); updateFactorLimits(' + n + ')"></div>' +
       '<div class="field f-total"><label>' + ICON_RELOJ + ' Total horas del día</label>' +
-        '<div class="horas-box dia-validator" id="validator-box-d' + n + '"><span class="vlabel" id="validator-label-d' + n + '">Ingresa el N° de auxiliares</span><span class="value" id="validator-value-d' + n + '">0h</span></div></div>' +
+        '<div class="horas-box dia-validator" id="validator-box-d' + n + '"><span class="vlabel" id="validator-label-d' + n + '">Ingresa el N° de auxiliares arriba</span><span class="value" id="validator-value-d' + n + '">0h</span></div></div>' +
       '<button type="button" class="del-btn dia-del" id="dia-del-' + n + '" onclick="quitarDia(' + n + ')" title="Quitar este día">' + ICON_TRASH + '</button>' +
     '</div>' +
     '<div class="dia-alert" id="dia-alert-' + n + '" hidden></div>' +
@@ -489,7 +496,6 @@ function crearDia(fechaISO, aux, filasIniciales) {
     '<button type="button" class="dia-add-row" onclick="addRow(' + n + ')">+ Agregar orden a este día</button>';
   document.getElementById('dias').appendChild(card);
   document.getElementById('fecha-d' + n).value = fechaISO || '';
-  if (aux) document.getElementById('aux-d' + n).value = aux;
   for (var i = 0; i < (filasIniciales || 0); i++) addRow(n);
   actualizarDia(n);
   renumerarDias();
@@ -500,8 +506,7 @@ function crearDia(fechaISO, aux, filasIniciales) {
 function agregarDia() {
   if (modoTemporal) { showToast('El código temporal solo sirve para el ' + fechaLegible(modoTemporal.fecha), true); return; }
   var ids = diaIds();
-  var auxPrev = ids.length ? (document.getElementById('aux-d' + ids[ids.length - 1]).value || '') : '';
-  var n = crearDia('', auxPrev, 1);
+  var n = crearDia('', '', 1);
   var card = document.getElementById('dia-' + n);
   card.scrollIntoView({ behavior: 'smooth', block: 'center' });
   setTimeout(function() { toggleCalendario(n); }, 350);
@@ -699,7 +704,7 @@ function updateValidator(n) {
   valEl.textContent = horasTexto(e.totalH);
   if (e.aux === 0) {
     box.className = 'horas-box dia-validator';
-    lblEl.textContent = 'Ingresa el N° de auxiliares';
+    lblEl.textContent = 'Ingresa el N° de auxiliares arriba';
   } else if (Math.abs(e.diff) <= 0.01) {
     lblEl.textContent = '✓ Exacto (' + e.aux + ' aux × 7h)';
     box.className = 'horas-box dia-validator valid';
@@ -713,7 +718,7 @@ function updateValidator(n) {
   actualizarResumen();
 }
 
-// Limita el factor al N° de auxiliares del día
+// Limita el factor al N° de auxiliares
 function limitFactor(id) {
   var n = diaDeFila(id);
   var auxGen = auxDia(n) || 1;
@@ -774,6 +779,9 @@ function guardarTodo() {
   if (!liderGen) {
     showToast('⚠ Selecciona el líder encargado', true); return;
   }
+  if (auxDia() < 1) {
+    showToast('⚠ Ingresa el número de auxiliares', true); return;
+  }
 
   // Un nuevo envío limpia los avisos de rechazo del envío anterior
   getDias().forEach(function(c) { delete c.dataset.bloqueo; });
@@ -796,7 +804,6 @@ function guardarTodo() {
     if (usadas[fecha]) { showToast('⚠ La fecha ' + fl + ' está en dos días. Junta sus órdenes en un solo día.', true); return; }
     usadas[fecha] = true;
     var aux = auxDia(n);
-    if (aux < 1) { showToast('⚠ Ingresa el número de auxiliares del ' + fl, true); return; }
     var rows = getRows(n);
     if (rows.length === 0) { showToast('⚠ Agrega al menos una orden al ' + fl, true); return; }
 
@@ -969,9 +976,8 @@ function guardarTodo() {
 
 function limpiarTodo() {
   var dias = diaIds();
-  var auxPrev = dias.length ? (document.getElementById('aux-d' + dias[0]).value || '') : '';
   document.getElementById('dias').innerHTML = '';
-  crearDia(modoTemporal ? modoTemporal.fecha : hoyISO(), auxPrev, 5);
+  crearDia(modoTemporal ? modoTemporal.fecha : hoyISO(), '', 5);
 }
 
 function getWeekNumber(dateStr) {
@@ -1117,7 +1123,7 @@ window.addEventListener('online', updateOnlineStatus);
 window.addEventListener('offline', updateOnlineStatus);
 updateOnlineStatus();
 
-// Plantilla de Excel: cada fila trae su Fecha y su N° de auxiliares.
+// Plantilla de Excel: cada fila trae su Fecha. El N° de auxiliares se escribe arriba en el formulario.
 // No lleva semana ni quincena: el formulario las calcula con la fecha de cada fila.
 function descargarPlantilla() {
   if (typeof XLSX === 'undefined') {
@@ -1125,13 +1131,13 @@ function descargarPlantilla() {
     return;
   }
   var wb = XLSX.utils.book_new();
-  var headers = [['Enviado', 'Fecha', 'N° Auxiliares', 'Orden (OP)', 'Hora inicio', 'Hora fin', 'Factor', 'Actividad', 'Observaciones']];
+  var headers = [['Enviado', 'Fecha', 'Orden (OP)', 'Hora inicio', 'Hora fin', 'Factor', 'Actividad', 'Observaciones']];
   var ws = XLSX.utils.aoa_to_sheet(headers);
   ws['!cols'] = [
-    { wch: 10 }, { wch: 13 }, { wch: 14 }, { wch: 18 }, { wch: 13 }, { wch: 13 },
+    { wch: 10 }, { wch: 13 }, { wch: 18 }, { wch: 13 }, { wch: 13 },
     { wch: 10 }, { wch: 35 }, { wch: 30 }
   ];
-  XLSX.utils.sheet_add_aoa(ws, [['', fechaLegible(hoyISO()), 1, 'OP-001', '07:00', '14:00', '1', 'Ejemplo de actividad', 'Opcional']], { origin: 'A2' });
+  XLSX.utils.sheet_add_aoa(ws, [['', fechaLegible(hoyISO()), 'OP-001', '07:00', '14:00', '1', 'Ejemplo de actividad', 'Opcional']], { origin: 'A2' });
   XLSX.utils.book_append_sheet(wb, ws, 'Registro');
   XLSX.writeFile(wb, 'Plantilla_ManoDeObra.xlsx');
   showToast('✓ Plantilla descargada correctamente');
@@ -1247,7 +1253,7 @@ function cargarDesdeExcel(event) {
       // Filas sin X en "Enviado"
       var dias0 = diaIds();
       var fechaForm = dias0.length ? fechaDia(dias0[0]) : hoyISO();
-      var auxForm = dias0.length ? (document.getElementById('aux-d' + dias0[0]).value || '') : '';
+      var auxForm = document.getElementById('aux-general').value || '';
       var filas = [];
       var ultFecha = '', ultAux = '';
       for (var i = 1; i < data.length; i++) {
@@ -1312,12 +1318,17 @@ function cargarDesdeExcel(event) {
       }
 
       var auxDistintos = [];
+      if (colAux > -1) {
+        var auxExcel = '';
+        filas.forEach(function(f) { if (!auxExcel && f.aux) auxExcel = String(f.aux); });
+        var auxArriba = document.getElementById('aux-general');
+        if (!auxArriba.value && auxExcel) auxArriba.value = auxExcel;
+        if (filas.some(function(f) { return f.aux && String(f.aux) !== String(auxArriba.value); })) auxDistintos.push('x');
+      }
       document.getElementById('dias').innerHTML = '';
       orden.forEach(function(fecha) {
         var g = grupos[fecha];
-        var aux = g[0].aux;
-        if (g.some(function(f) { return f.aux !== aux; })) auxDistintos.push(fechaLegible(fecha));
-        var n = crearDia(fecha, aux, 0);
+        var n = crearDia(fecha, '', 0);
         g.forEach(function(f) { llenarFila(addRow(n), f); });
         updateValidator(n);
       });
@@ -1327,7 +1338,7 @@ function cargarDesdeExcel(event) {
       if (noPermitidas.length) {
         showToast('⚠ Cargadas ' + filas.length + ' filas en ' + orden.length + ' días. Revisa: ' + noPermitidas.map(fechaLegible).join(', ') + ' no está(n) permitida(s).', true);
       } else if (auxDistintos.length) {
-        showToast('⚠ El N° de auxiliares cambia dentro del ' + auxDistintos.join(', ') + '. Se usó el de la primera fila; revísalo.', true);
+        showToast('⚠ El Excel trae otro N° de auxiliares. Se usa el de arriba (' + document.getElementById('aux-general').value + '); revísalo.', true);
       } else {
         showToast('✓ ' + filas.length + ' fila(s) cargadas en ' + orden.length + (orden.length === 1 ? ' día' : ' días'));
       }
